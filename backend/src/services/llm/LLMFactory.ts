@@ -21,7 +21,9 @@ export class LLMFactory {
     if (config.llm.openai?.apiKey) {
       this.providers.set('openai', new OpenAIService(
         config.llm.openai.apiKey,
-        config.llm.openai.defaultModel
+        // Use nullish coalescing to ensure we never pass undefined explicitly
+        // This allows the constructor's default parameter to work correctly
+        config.llm.openai.defaultModel ?? 'gpt-4'
       ));
     }
 
@@ -29,7 +31,7 @@ export class LLMFactory {
     if (config.llm.anthropic?.apiKey) {
       this.providers.set('anthropic', new AnthropicService(
         config.llm.anthropic.apiKey,
-        config.llm.anthropic.defaultModel
+        config.llm.anthropic.defaultModel ?? 'claude-3-5-sonnet-20241022'
       ));
     }
 
@@ -37,7 +39,7 @@ export class LLMFactory {
     if (config.llm.gemini?.apiKey) {
       this.providers.set('gemini', new GeminiService(
         config.llm.gemini.apiKey,
-        config.llm.gemini.defaultModel
+        config.llm.gemini.defaultModel ?? 'gemini-pro'
       ));
     }
   }
