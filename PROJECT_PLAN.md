@@ -32,6 +32,10 @@ llm-chat-app/
 │   │   │   └── index.ts       # Shared types
 │   │   └── config/
 │   │       └── index.ts       # Configuration
+│   ├── __tests__/            # Test files
+│   │   ├── unit/             # Unit tests
+│   │   ├── integration/       # Integration tests
+│   │   └── fixtures/         # Test fixtures and mocks
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── Dockerfile
@@ -49,12 +53,17 @@ llm-chat-app/
 │   │   ├── types/
 │   │   │   └── index.ts
 │   │   └── App.tsx
+│   ├── __tests__/            # Test files
+│   │   ├── components/       # Component tests
+│   │   └── hooks/            # Hook tests
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
+├── test.sh                  # Comprehensive test automation script
+├── test-api.sh              # API endpoint testing script
 └── README.md
 ```
 
@@ -177,9 +186,36 @@ llm-chat-app/
    - Type safety improvements
    - Error handling refinement
 
-3. Testing (optional for MVP)
-   - Basic API endpoint tests
-   - Component tests
+### Phase 7: Automated Testing
+**Goal**: Set up automated testing infrastructure for reliable development
+
+1. Test infrastructure setup
+   - Install testing frameworks (Jest/Vitest for backend, Vitest for frontend)
+   - Configure test scripts in package.json
+   - Set up test environment configuration
+
+2. Backend unit tests
+   - Test LLM provider services (mocked API calls)
+   - Test LLMFactory initialization and provider management
+   - Test ChatService business logic
+   - Test API route handlers with request validation
+   - Test error handling scenarios
+
+3. Backend integration tests
+   - Test API endpoints with test server
+   - Test provider availability detection
+   - Test chat flow end-to-end (with mocked LLM responses)
+
+4. Frontend unit tests
+   - Test React components (ChatInterface, MessageList, etc.)
+   - Test custom hooks (useChat)
+   - Test API service layer
+
+5. Test automation script
+   - Create `test.sh` script to run all tests
+   - Support for running specific test suites
+   - Integration with CI/CD (optional)
+   - Test coverage reporting
 
 ## Environment Variables
 
@@ -258,24 +294,50 @@ REACT_APP_API_URL=http://localhost:3001
 - `@google/generative-ai` - Google Gemini SDK
 - `cors` - CORS middleware
 - `dotenv` - Environment variables
-- `zod` - Runtime validation (optional)
+- `zod` - Runtime validation
+- `jest` or `vitest` - Testing framework
+- `@types/jest` or `@vitest/ui` - Test type definitions
+- `supertest` - HTTP assertion library for API testing
 
 ### Frontend
 - `react` - UI library
 - `react-dom` - React DOM
 - `axios` or `fetch` - HTTP client
 - UI library (optional): `tailwindcss`, `shadcn/ui`, or `@mui/material`
+- `vitest` - Testing framework (works well with Vite)
+- `@testing-library/react` - React component testing utilities
+- `@testing-library/jest-dom` - Custom Jest matchers for DOM
+
+## Testing Strategy
+
+### Automated Testing
+- **Unit Tests**: Test individual functions and classes in isolation
+- **Integration Tests**: Test API endpoints and service interactions
+- **E2E Tests**: Test complete user flows (optional for MVP)
+
+### Test Scripts
+- `npm test` - Run all tests
+- `npm run test:unit` - Run unit tests only
+- `npm run test:integration` - Run integration tests only
+- `npm run test:watch` - Run tests in watch mode
+- `./test.sh` - Comprehensive test automation script
+
+### Test Coverage Goals
+- Backend: 80%+ coverage for core services
+- Frontend: 70%+ coverage for components and hooks
+- Critical paths: 100% coverage (error handling, validation)
 
 ## Next Steps
 
 1. ✅ Review and approve this plan
-2. Initialize project structure
-3. Set up backend foundation
-4. Implement LLM abstraction layer
+2. ✅ Initialize project structure
+3. ✅ Set up backend foundation
+4. ✅ Implement LLM abstraction layer
 5. Build frontend interface
 6. Containerize with Docker
-7. Test locally
-8. Prepare for cloud deployment
+7. Set up automated testing
+8. Test locally
+9. Prepare for cloud deployment
 
 ## Notes
 - MVP focus: Keep it simple, add features incrementally
