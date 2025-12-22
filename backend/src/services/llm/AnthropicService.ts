@@ -48,9 +48,17 @@ export class AnthropicService implements LLMProvider {
       });
 
       // Anthropic returns content as an array, extract text
+      if (!response.content || response.content.length === 0) {
+        throw new Error('Anthropic API returned empty content array');
+      }
+
       const content = response.content[0];
-      if (content.type !== 'text') {
-        throw new Error('Unexpected content type from Anthropic API');
+      if (!content || content.type !== 'text') {
+        throw new Error(`Unexpected content type from Anthropic API: ${content?.type || 'undefined'}`);
+      }
+
+      if (!content.text) {
+        throw new Error('Anthropic API returned text content with no text property');
       }
 
       return content.text;
