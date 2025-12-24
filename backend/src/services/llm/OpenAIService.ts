@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { LLMProvider } from './LLMProvider';
+import { LLMProvider, ChatResult } from './LLMProvider';
 import { Message } from '../../types';
 
 export class OpenAIService implements LLMProvider {
@@ -24,7 +24,7 @@ export class OpenAIService implements LLMProvider {
     return this.defaultModel;
   }
 
-  async chat(messages: Message[], model?: string): Promise<string> {
+  async chat(messages: Message[], model?: string): Promise<ChatResult> {
     if (!this.client) {
       throw new Error('OpenAI client not initialized. Please provide a valid API key.');
     }
@@ -36,8 +36,9 @@ export class OpenAIService implements LLMProvider {
         content: msg.content,
       }));
 
+      const requestedModel = model || this.defaultModel;
       const response = await this.client.chat.completions.create({
-        model: model || this.defaultModel,
+        model: requestedModel,
         messages: openAIMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
       });
 
@@ -46,7 +47,13 @@ export class OpenAIService implements LLMProvider {
         throw new Error('No response content from OpenAI');
       }
 
-      return content;
+      // Get the actual model used from the API response
+      const actualModel = response.model || requestedModel;
+
+      return {
+        content,
+        model: actualModel,
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`OpenAI API error: ${error.message}`);

@@ -37,14 +37,13 @@ export class ChatService {
     }
 
     try {
-      // Get response from LLM provider
-      const responseText = await llmProvider.chat(messages, model);
-      const usedModel = model || llmProvider.getDefaultModel();
+      // Get response from LLM provider (now returns both content and actual model used)
+      const result = await llmProvider.chat(messages, model);
 
       return {
-        message: responseText,
+        message: result.content,
         provider,
-        model: usedModel,
+        model: result.model, // Use the actual model from the API response
       };
     } catch (error) {
       if (error instanceof Error) {

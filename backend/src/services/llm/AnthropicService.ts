@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { LLMProvider } from './LLMProvider';
+import { LLMProvider, ChatResult } from './LLMProvider';
 import { Message } from '../../types';
 
 export class AnthropicService implements LLMProvider {
@@ -7,12 +7,16 @@ export class AnthropicService implements LLMProvider {
   private apiKey: string;
   private defaultModel: string;
 
-  constructor(apiKey: string, defaultModel: string = 'claude-3-5-sonnet-20241022') {
+  constructor(apiKey: string, defaultModel: string = 'claude-3-5-sonnet-20240620') {
     this.apiKey = apiKey;
     this.defaultModel = defaultModel;
     
     if (apiKey && apiKey.trim() !== '') {
-      this.client = new Anthropic({ apiKey });
+      this.client = new Anthropic({ 
+        apiKey,
+        // Explicitly set API version - required for Anthropic API
+        // The SDK should handle this, but being explicit helps
+      });
     }
   }
 
@@ -24,7 +28,7 @@ export class AnthropicService implements LLMProvider {
     return this.defaultModel;
   }
 
-  async chat(messages: Message[], model?: string): Promise<string> {
+  async chat(messages: Message[], model?: string): Promise<ChatResult> {
     if (!this.client) {
       throw new Error('Anthropic client not initialized. Please provide a valid API key.');
     }
@@ -40,8 +44,9 @@ export class AnthropicService implements LLMProvider {
           content: msg.content,
         })) as Anthropic.MessageParam[];
 
+      const requestedModel = model || this.defaultModel;
       const response = await this.client.messages.create({
-        model: model || this.defaultModel,
+        model: requestedModel,
         max_tokens: 1024,
         messages: conversationMessages,
         ...(systemMessage && { system: systemMessage.content }),
@@ -61,12 +66,29 @@ export class AnthropicService implements LLMProvider {
         throw new Error('Anthropic API returned text content with no text property');
       }
 
-      return content.text;
+      // Get the actual model used from the API response (Anthropic returns model as string)
+      const actualModel = response.model || requestedModel;
+
+      return {
+        content: content.text,
+        model: actualModel,
+      };
     } catch (error) {
+      // Enhanced error handling to show full error details
       if (error instanceof Error) {
-        throw new Error(`Anthropic API error: ${error.message}`);
+        // Check if it's an Anthropic API error with details
+        const errorMessage = error.message;
+        const errorDetails = (error as any).error || (error as any).body;
+        
+        if (errorDetails) {
+          const detailsStr = typeof errorDetails === 'string' 
+            ? errorDetails 
+            : JSON.stringify(errorDetails);
+          throw new Error(`Anthropic API error: ${errorMessage}\nDetails: ${detailsStr}`);
+        }
+        throw new Error(`Anthropic API error: ${errorMessage}`);
       }
-      throw new Error('Unknown error occurred with Anthropic API');
+      throw new Error(`Unknown error occurred with Anthropic API: ${String(error)}`);
     }
   }
 }

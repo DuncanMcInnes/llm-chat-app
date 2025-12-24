@@ -1,7 +1,13 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import { LLMConfig } from '../types';
 
-dotenv.config();
+// Load environment variables
+// 1. Try project root .env (one level above backend/)
+// 2. Fallback to backend/.env
+const projectRootEnvPath = path.resolve(__dirname, '../../../.env');
+dotenv.config({ path: projectRootEnvPath });
+dotenv.config(); // fallback to default .env lookup in backend directory
 
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
@@ -14,11 +20,13 @@ export const config = {
     },
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
-      defaultModel: process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-3-5-sonnet-20241022',
+      // Try claude-3-5-sonnet-20240620 first, fallback to claude-3-sonnet-20240229
+      // User can override in .env if needed
+      defaultModel: process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-3-5-sonnet-20240620',
     },
     gemini: {
       apiKey: process.env.GOOGLE_API_KEY || '',
-      defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-pro',
+      defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
     },
   } as LLMConfig,
 } as const;

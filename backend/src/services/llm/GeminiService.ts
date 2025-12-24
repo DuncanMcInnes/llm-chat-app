@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { LLMProvider } from './LLMProvider';
+import { LLMProvider, ChatResult } from './LLMProvider';
 import { Message } from '../../types';
 
 export class GeminiService implements LLMProvider {
@@ -7,7 +7,7 @@ export class GeminiService implements LLMProvider {
   private apiKey: string;
   private defaultModel: string;
 
-  constructor(apiKey: string, defaultModel: string = 'gemini-pro') {
+  constructor(apiKey: string, defaultModel: string = 'gemini-1.5-flash') {
     this.apiKey = apiKey;
     this.defaultModel = defaultModel;
     
@@ -24,7 +24,7 @@ export class GeminiService implements LLMProvider {
     return this.defaultModel;
   }
 
-  async chat(messages: Message[], model?: string): Promise<string> {
+  async chat(messages: Message[], model?: string): Promise<ChatResult> {
     if (!this.genAI) {
       throw new Error('Gemini client not initialized. Please provide a valid API key.');
     }
@@ -66,7 +66,11 @@ export class GeminiService implements LLMProvider {
         throw new Error('No response text from Gemini');
       }
 
-      return text;
+      // Gemini doesn't return model info in response, so use requested model
+      return {
+        content: text,
+        model: modelName,
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Gemini API error: ${error.message}`);

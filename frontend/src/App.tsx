@@ -1,10 +1,11 @@
+import { ChatInterface } from './components/ChatInterface';
+
 function App() {
   return (
-    <div className="app">
-      <h1>LLM Chat Interface</h1>
-      <p>Frontend coming soon...</p>
+    <div className="app-root">
+      <ChatInterface />
     </div>
-  )
+  );
 }
 
 export default App
