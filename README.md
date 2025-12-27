@@ -161,6 +161,16 @@ docker-compose build frontend
   - Request body: `{ provider: string, messages: Message[], model?: string }`
   - Response: `{ message: string, provider: string, model: string }`
 
+## Architecture
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture diagrams including:
+- System architecture overview
+- Module dependency graphs
+- Data flow sequences
+- LLM provider abstraction pattern
+- Docker architecture
+- Technology stack visualization
+
 ## Development
 
 - Backend: `npm run dev` (uses tsx for hot reload)
