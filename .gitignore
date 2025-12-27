@@ -54,6 +54,12 @@ Thumbs.db
 # Docker
 .dockerignore
 
+# Document storage
+storage/
+*.pdf
+*.docx
+*.doc
+
 # Misc
 .cache/
 .temp/

@@ -2,9 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config';
 import { LLMFactory } from './services/llm/LLMFactory';
+import { storageConfig } from './config/storage';
 import chatRoutes from './routes/chat';
+import documentRoutes from './routes/documents';
 
 const app = express();
+
+// Initialize storage
+storageConfig.initialize();
+console.log('📁 Storage initialized');
 
 // Initialize LLM providers
 LLMFactory.initialize();
@@ -25,6 +31,7 @@ app.get('/health', (_req, res) => {
 
 // API routes
 app.use('/api', chatRoutes);
+app.use('/api/documents', documentRoutes);
 
 const PORT = config.port;
 

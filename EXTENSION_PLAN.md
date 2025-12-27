@@ -333,29 +333,30 @@ Extend the LLM Chat App to support:
 
 ---
 
-## Questions for You
+## Decisions Made ✅
 
-1. **Priority**: Which feature is most important first?
-   - [ ] Document processing
-   - [ ] RAG pipelines
-   - [ ] Agent framework
-
-2. **Storage**: Temporary or persistent document storage?
-
-3. **Vector DB**: Local (Chroma) or cloud (Pinecone) preference?
-
-4. **Agent Framework**: LangChain.js or lighter alternative?
-
-5. **MCP Services**: Which specific MCP servers to integrate?
-
-6. **Branch**: Add to `main`, `local-ollama`, or new branch?
+1. **Priority**: Document processing → RAG → Agents (incremental approach)
+2. **Storage**: Persistent for RAG with cleanup capabilities
+3. **Vector DB**: Local (Chroma) - Docker container
+4. **Agent Framework**: LangChain.js
+5. **MCP Services**: Academia MCP, Google News MCP
+6. **Branch**: `feature/rag-agents` (new branch)
 
 ---
 
-## Next Steps
+## Implementation Roadmap
 
-Once you answer the questions above, I can:
-1. Create detailed implementation plans for each phase
-2. Set up the initial infrastructure (file upload, vector DB)
-3. Begin implementation of your highest priority feature
+### Immediate Next Steps (Phase 8.1-8.2)
+1. Set up file upload infrastructure
+2. Implement PDF processing
+3. Create document storage with cleanup policies
+4. Basic summarization service
+
+### Following Steps
+5. Phase 10: Vector DB (Chroma) + Embeddings
+6. Phase 11: RAG Pipeline
+7. Phase 8.3-8.4: Word documents
+8. Phase 9: Video & Web content
+9. Phase 12: LangChain agents + MCP integration
+10. Phase 13: Full integration
 

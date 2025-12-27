@@ -1,0 +1,10 @@
+This is a test document for the LLM Chat App.
+
+It contains multiple paragraphs to test document processing.
+
+The document processing system should be able to:
+- Extract text from documents
+- Chunk the text appropriately  
+- Summarize the content using LLM providers
+
+This is the final paragraph of the test document.
