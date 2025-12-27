@@ -1,16 +1,34 @@
 # LLM Chat Interface - Project Plan
 
 ## Project Overview
-A full-stack TypeScript application featuring a chat interface with abstraction layer supporting multiple LLM providers (GPT, Claude, Gemini). Built as an MVP for educational purposes, deployable via Docker.
+A full-stack TypeScript application featuring a chat interface with abstraction layer supporting multiple LLM providers (GPT, Claude, Gemini, OLLAMA). Built as an MVP for educational purposes, deployable via Docker.
+
+### Branching Strategy
+The project uses a branching strategy to support different deployment scenarios:
+
+- **`main` branch**: Cloud deployment version
+  - Supports: OpenAI, Anthropic, Gemini
+  - Optimized for cloud deployment (Digital Ocean, etc.)
+  - Standard Docker Compose setup
+
+- **`local-ollama` branch**: Local deployment with OLLAMA
+  - Supports: OpenAI, Anthropic, Gemini, **OLLAMA (Local)**
+  - Hardware detection and optimization
+  - Mac M-series: Native OLLAMA with Metal acceleration
+  - Linux NVIDIA: Docker OLLAMA with GPU support
+  - CPU-only: Standard Docker OLLAMA
 
 ## Architecture
 
 ### Tech Stack
-- **Backend**: Node.js + Express/Fastify + TypeScript
-- **Frontend**: React/Next.js + TypeScript
-- **LLM Providers**: OpenAI (GPT), Anthropic (Claude), Google (Gemini)
+- **Backend**: Node.js + Express + TypeScript
+- **Frontend**: React + Vite + TypeScript
+- **LLM Providers**: 
+  - **Cloud**: OpenAI (GPT), Anthropic (Claude), Google (Gemini)
+  - **Local**: OLLAMA (with hardware-optimized setup)
 - **Containerization**: Docker + Docker Compose
-- **Package Manager**: npm or pnpm
+- **Package Manager**: npm
+- **Testing**: Jest (backend), Vitest (frontend)
 
 ### Project Structure
 ```
@@ -26,6 +44,7 @@ llm-chat-app/
 │   │   │   │   ├── OpenAIService.ts    # GPT implementation
 │   │   │   │   ├── AnthropicService.ts # Claude implementation
 │   │   │   │   ├── GeminiService.ts    # Gemini implementation
+│   │   │   │   ├── OllamaService.ts    # OLLAMA implementation (local-ollama branch)
 │   │   │   │   └── LLMFactory.ts       # Factory pattern
 │   │   │   └── chatService.ts
 │   │   ├── types/
@@ -59,12 +78,20 @@ llm-chat-app/
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml              # Standard/CPU-only setup
+├── docker-compose.mac-metal.yml    # Mac M-series (native OLLAMA)
+├── docker-compose.nvidia-gpu.yml   # Linux with NVIDIA GPU
 ├── .env.example
 ├── .gitignore
 ├── test.sh                  # Comprehensive test automation script
 ├── test-api.sh              # API endpoint testing script
-└── README.md
+├── detect-hardware.sh       # Hardware detection (local-ollama branch)
+├── setup-ollama.sh          # Automated OLLAMA setup (local-ollama branch)
+├── README.md                # Main documentation
+├── README_LOCAL.md          # Local deployment guide (local-ollama branch)
+├── HARDWARE_SETUP.md       # Hardware-specific setup (local-ollama branch)
+├── ARCHITECTURE.md          # Architecture diagrams
+└── TESTING.md               # Testing documentation
 ```
 
 ## Implementation Phases
@@ -102,6 +129,7 @@ llm-chat-app/
    - **OpenAI Service**: Wrap OpenAI SDK
    - **Anthropic Service**: Wrap Anthropic SDK
    - **Gemini Service**: Wrap Google Gemini SDK
+   - **OLLAMA Service**: HTTP client for local OLLAMA API (local-ollama branch)
    - Each adapter implements `LLMProvider` interface
 
 3. Factory pattern
@@ -171,6 +199,29 @@ llm-chat-app/
    - Create .env.example with all required variables
    - Document environment setup
 
+### Phase 5.5: OLLAMA Local LLM Integration (local-ollama branch)
+**Goal**: Add local LLM support with hardware optimization
+
+1. OLLAMA Service Implementation
+   - Create OllamaService implementing LLMProvider
+   - HTTP client for OLLAMA API
+   - Error handling and connection management
+
+2. Hardware Detection
+   - Detect Mac M-series (Apple Silicon)
+   - Detect NVIDIA GPU (Linux)
+   - Fallback to CPU-only configuration
+
+3. Hardware-Specific Docker Compose
+   - Mac M-series: Native OLLAMA with Metal acceleration
+   - NVIDIA GPU: Docker OLLAMA with GPU support
+   - CPU-only: Standard Docker OLLAMA
+
+4. Automated Setup Scripts
+   - Hardware detection script
+   - Automated OLLAMA installation and configuration
+   - Model pulling automation
+
 ### Phase 6: Documentation & Polish
 **Goal**: Make project ready for deployment and sharing
 
@@ -227,6 +278,10 @@ OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key
 GOOGLE_API_KEY=your_google_key
 CORS_ORIGIN=http://localhost:3000
+
+# OLLAMA Configuration (local-ollama branch only)
+OLLAMA_BASE_URL=http://localhost:11434  # or http://ollama:11434 for Docker
+OLLAMA_DEFAULT_MODEL=mistral             # or llama3, llama2, etc.
 ```
 
 ### Frontend
@@ -242,7 +297,7 @@ REACT_APP_API_URL=http://localhost:3001
 **Request:**
 ```json
 {
-  "provider": "openai" | "anthropic" | "gemini",
+  "provider": "openai" | "anthropic" | "gemini" | "ollama",
   "messages": [
     { "role": "user", "content": "Hello!" },
     { "role": "assistant", "content": "Hi there!" }
@@ -250,6 +305,8 @@ REACT_APP_API_URL=http://localhost:3001
   "model": "gpt-4" (optional, provider-specific)
 }
 ```
+
+**Note**: `"ollama"` provider available only in `local-ollama` branch.
 
 **Response:**
 ```json
@@ -267,23 +324,50 @@ REACT_APP_API_URL=http://localhost:3001
   "providers": [
     { "id": "openai", "name": "OpenAI GPT", "available": true },
     { "id": "anthropic", "name": "Anthropic Claude", "available": true },
-    { "id": "gemini", "name": "Google Gemini", "available": true }
+    { "id": "gemini", "name": "Google Gemini", "available": true },
+    { "id": "ollama", "name": "OLLAMA (Local)", "available": true }
   ]
 }
 ```
 
+**Note**: `"ollama"` provider appears only in `local-ollama` branch when configured.
+
 ## Deployment Strategy
 
-### Local Docker Deployment
+### Branch Selection
+- **`main` branch**: Use for cloud deployment (Digital Ocean, AWS, etc.)
+- **`local-ollama` branch**: Use for local deployment with OLLAMA support
+
+### Local Docker Deployment (main branch)
 1. Build images: `docker-compose build`
 2. Run containers: `docker-compose up`
 3. Access: `http://localhost:3000` (frontend), `http://localhost:3001` (backend)
 
-### Cloud Deployment (Digital Ocean)
+### Local Deployment with OLLAMA (local-ollama branch)
+1. **Mac M-series (Recommended: Native OLLAMA)**
+   - Install OLLAMA: `brew install ollama`
+   - Start OLLAMA: `brew services start ollama`
+   - Pull models: `ollama pull mistral`
+   - Start app: `docker-compose -f docker-compose.mac-metal.yml up`
+
+2. **Linux with NVIDIA GPU**
+   - Install NVIDIA Container Toolkit
+   - Start services: `docker-compose -f docker-compose.nvidia-gpu.yml up`
+   - Pull models: `docker exec -it llm-chat-ollama ollama pull mistral`
+
+3. **CPU-only**
+   - Start services: `docker-compose up`
+   - Pull models: `docker exec -it llm-chat-ollama ollama pull mistral`
+
+4. **Automated Setup**
+   - Run: `./setup-ollama.sh` (detects hardware and guides setup)
+
+### Cloud Deployment (Digital Ocean) - main branch
 1. Create Dockerfile optimizations for production
 2. Set up environment variables in cloud platform
 3. Configure domain and SSL
 4. Set up CI/CD pipeline (optional)
+5. **Note**: OLLAMA not included in cloud deployment (use cloud providers)
 
 ## Dependencies
 
@@ -327,21 +411,57 @@ REACT_APP_API_URL=http://localhost:3001
 - Frontend: 70%+ coverage for components and hooks
 - Critical paths: 100% coverage (error handling, validation)
 
-## Next Steps
+## Implementation Status
 
-1. ✅ Review and approve this plan
-2. ✅ Initialize project structure
-3. ✅ Set up backend foundation
-4. ✅ Implement LLM abstraction layer
-5. Build frontend interface
-6. Containerize with Docker
-7. Set up automated testing
-8. Test locally
-9. Prepare for cloud deployment
+### Completed Phases ✅
+1. ✅ Project setup & backend foundation
+2. ✅ LLM abstraction layer (OpenAI, Anthropic, Gemini)
+3. ✅ Chat API endpoints
+4. ✅ Frontend chat interface
+5. ✅ Docker configuration
+6. ✅ Documentation & polish
+7. ✅ Automated testing infrastructure
+8. ✅ OLLAMA local LLM integration (local-ollama branch)
+9. ✅ Hardware detection and optimization
+
+### Next Steps
+
+**Main Branch (Cloud Deployment)**
+- [ ] Deploy to Digital Ocean
+- [ ] Set up CI/CD pipeline
+- [ ] Configure production environment variables
+- [ ] Set up domain and SSL
+
+**Local-OLLAMA Branch (Local Deployment)**
+- [x] OLLAMA integration complete
+- [x] Hardware detection working
+- [x] Mac M-series Metal acceleration tested
+- [ ] Test on Linux with NVIDIA GPU (if available)
+- [ ] Performance benchmarking
 
 ## Notes
 - MVP focus: Keep it simple, add features incrementally
 - Educational purpose: Well-documented code with clear architecture
 - Extensibility: Easy to add new LLM providers in the future
 - Error handling: Graceful degradation when providers are unavailable
+- Branching: Separate branches for different deployment scenarios
+- Hardware optimization: Automatic detection and configuration for best performance
+- Privacy: OLLAMA option keeps conversations local (no external API calls)
+
+## Branch-Specific Features
+
+### Main Branch
+- Cloud-optimized deployment
+- Three cloud LLM providers (OpenAI, Anthropic, Gemini)
+- Standard Docker Compose setup
+- Ready for Digital Ocean deployment
+
+### Local-OLLAMA Branch
+- All features from main branch
+- Plus: OLLAMA local LLM support
+- Hardware detection and optimization
+- Mac M-series: Native OLLAMA with Metal
+- Linux NVIDIA: Docker OLLAMA with GPU
+- CPU-only: Standard Docker OLLAMA
+- Privacy-focused local option
 
