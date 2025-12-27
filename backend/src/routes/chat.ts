@@ -38,7 +38,7 @@ router.post('/chat', async (req: Request, res: Response) => {
     // Process the chat request
     const response = await ChatService.processChat(chatRequest);
 
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Chat error:', error);
     
@@ -49,7 +49,7 @@ router.post('/chat', async (req: Request, res: Response) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Chat request failed',
       message: 'Unknown error occurred',
     });
@@ -63,10 +63,10 @@ router.post('/chat', async (req: Request, res: Response) => {
 router.get('/providers', (_req: Request, res: Response) => {
   try {
     const providers = ChatService.getAvailableProviders();
-    res.json({ providers });
+    return res.json({ providers });
   } catch (error) {
     console.error('Providers error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get providers',
       message: error instanceof Error ? error.message : 'Unknown error',
     });

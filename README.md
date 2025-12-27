@@ -72,17 +72,94 @@ The application will be available at:
 
 ## Docker Deployment
 
-### Build and run with Docker Compose:
+### Prerequisites
+
+- Docker Desktop (or Docker Engine + Docker Compose)
+- `.env` file with your API keys (see `.env.example`)
+
+### Quick Start
+
+1. **Set up environment variables:**
 
 ```bash
-docker-compose up --build
+# Copy the example file
+cp .env.example .env
+
+# Edit .env and add your API keys
+# At minimum, add keys for the providers you want to use
 ```
+
+2. **Build and run with Docker Compose:**
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d --build
+```
+
+3. **Access the application:**
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- Health check: http://localhost:3001/health
+
+### Docker Commands
+
+```bash
+# Start services
+docker-compose up
+
+# Start in background (detached)
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+
+# View logs
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Rebuild after code changes
+docker-compose up --build
+
+# Rebuild specific service
+docker-compose build backend
+docker-compose build frontend
+```
+
+### Docker Architecture
+
+- **Backend**: Multi-stage build with Node.js 20 Alpine
+  - Production dependencies only
+  - Runs as non-root user
+  - Health check enabled
+  - Port: 3001
+
+- **Frontend**: Multi-stage build with Vite + Nginx
+  - Static files served by Nginx
+  - API requests proxied to backend
+  - Gzip compression enabled
+  - Port: 3000 (mapped to Nginx port 80)
+
+- **Networking**: Services communicate via Docker network
+  - Frontend proxies `/api/*` to backend
+  - CORS configured for localhost:3000
 
 ## API Endpoints
 
-- `GET /health` - Health check
-- `POST /api/chat` - Send chat message (coming soon)
-- `GET /api/providers` - List available providers (coming soon)
+- `GET /health` - Health check endpoint
+- `GET /api/providers` - List available LLM providers and their status
+- `POST /api/chat` - Send chat message to selected LLM provider
+  - Request body: `{ provider: string, messages: Message[], model?: string }`
+  - Response: `{ message: string, provider: string, model: string }`
 
 ## Development
 
