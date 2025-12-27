@@ -1,141 +1,230 @@
 # Testing Guide
 
-## Prerequisites Check
+This document describes the testing infrastructure and how to run tests for the LLM Chat App.
 
-Before testing, ensure you have:
-- Node.js 18+ installed
-- npm (comes with Node.js)
+## Test Infrastructure
 
-Check installation:
-```bash
-node --version
-npm --version
+### Backend Testing (Jest)
+
+- **Framework**: Jest with ts-jest
+- **Location**: `backend/src/__tests__/`
+- **Configuration**: `backend/jest.config.js`
+
+#### Test Structure
+
+```
+backend/src/__tests__/
+├── setup.ts                    # Test setup and configuration
+├── unit/                       # Unit tests
+│   ├── LLMFactory.test.ts     # Factory pattern tests
+│   └── ChatService.test.ts     # Business logic tests
+└── integration/                # Integration tests
+    └── chat.routes.test.ts     # API endpoint tests
 ```
 
-## Step 1: Install Dependencies
+#### Running Backend Tests
 
-### Backend
 ```bash
+# Run all tests
 cd backend
-npm install
+npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests
+npm run test:integration
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
-### Frontend
+### Frontend Testing (Vitest)
+
+- **Framework**: Vitest with React Testing Library
+- **Location**: `frontend/src/__tests__/`
+- **Configuration**: `frontend/vite.config.ts` (test section)
+
+#### Test Structure
+
+```
+frontend/src/__tests__/
+├── setup.ts                    # Test setup and configuration
+├── hooks/                       # Hook tests
+│   └── useChat.test.tsx        # Chat hook tests
+└── components/                  # Component tests
+    └── ProviderSelector.test.tsx # Component tests
+```
+
+#### Running Frontend Tests
+
 ```bash
+# Run all tests
 cd frontend
-npm install
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
-## Step 2: Set Up Environment Variables
+## Comprehensive Test Script
 
-Create a `.env` file in the root directory (or backend directory):
+The project includes a comprehensive test automation script at the root:
+
 ```bash
-# From project root
-cp .env.example .env
+# Run all tests (type check, lint, unit, integration)
+./test.sh
+
+# Run only unit tests
+./test.sh --unit-only
+
+# Run only integration tests
+./test.sh --integration-only
+
+# Run with coverage
+./test.sh --coverage
+
+# Run with verbose output
+./test.sh --verbose
+
+# Skip linting
+./test.sh --no-lint
+
+# Skip type checking
+./test.sh --no-type-check
 ```
 
-For basic testing, you can leave API keys empty - the server will still start, but LLM features won't work until you add real keys.
+## Test Coverage
 
-## Step 3: Test Backend Server
+### Backend Coverage Goals
 
-### Start the backend:
-```bash
-cd backend
-npm run dev
+- **Core Services**: 80%+ coverage
+- **LLM Providers**: Mocked API calls, test error handling
+- **API Routes**: Full request/response cycle testing
+- **Critical Paths**: 100% coverage (error handling, validation)
+
+### Frontend Coverage Goals
+
+- **Components**: 70%+ coverage
+- **Hooks**: 80%+ coverage
+- **API Service**: Mocked fetch calls
+- **User Interactions**: Test user events and state changes
+
+## Writing Tests
+
+### Backend Unit Test Example
+
+```typescript
+import { ChatService } from '../../services/chatService';
+import { LLMFactory } from '../../services/llm/LLMFactory';
+
+jest.mock('../../services/llm/LLMFactory');
+
+describe('ChatService', () => {
+  const mockProvider = {
+    chat: jest.fn(),
+    isAvailable: jest.fn(() => true),
+    getDefaultModel: jest.fn(() => 'gpt-4'),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (LLMFactory.getProvider as jest.Mock).mockReturnValue(mockProvider);
+  });
+
+  it('should process valid chat request', async () => {
+    // Test implementation
+  });
+});
 ```
 
-You should see:
-```
-🚀 Server running on http://localhost:3001
-📝 Environment: development
-🔗 CORS enabled for: http://localhost:3000
-```
+### Frontend Component Test Example
 
-### Test the health endpoint:
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ProviderSelector } from '../../components/ProviderSelector';
 
-**Option 1: Using curl**
-```bash
-curl http://localhost:3001/health
-```
-
-Expected response:
-```json
-{"status":"ok","timestamp":"2024-01-XX..."}
-```
-
-**Option 2: Using browser**
-Open: http://localhost:3001/health
-
-**Option 3: Using httpie (if installed)**
-```bash
-http GET http://localhost:3001/health
-```
-
-## Step 4: Test Frontend
-
-In a new terminal:
-```bash
-cd frontend
-npm run dev
+describe('ProviderSelector', () => {
+  it('should render and handle selection', async () => {
+    const user = userEvent.setup();
+    const mockOnChange = vi.fn();
+    
+    render(
+      <ProviderSelector
+        providers={mockProviders}
+        value="openai"
+        onChange={mockOnChange}
+      />
+    );
+    
+    const select = screen.getByRole('combobox');
+    await user.selectOptions(select, 'anthropic');
+    
+    expect(mockOnChange).toHaveBeenCalledWith('anthropic');
+  });
+});
 ```
 
-You should see:
+## Mocking
+
+### Backend Mocks
+
+- **LLMFactory**: Mocked to avoid actual API calls
+- **External APIs**: All LLM provider SDKs are mocked in tests
+- **Config**: Environment variables mocked for test scenarios
+
+### Frontend Mocks
+
+- **API Service**: `fetchProviders` and `sendChat` are mocked
+- **Fetch API**: Can be mocked using `vi.stubGlobal` if needed
+
+## Continuous Integration
+
+The test scripts are designed to work with CI/CD pipelines:
+
+```yaml
+# Example GitHub Actions workflow
+- name: Run tests
+  run: |
+    ./test.sh --coverage
 ```
-VITE v5.x.x  ready in xxx ms
 
-➜  Local:   http://localhost:3000/
-```
+## Test Best Practices
 
-Open http://localhost:3000 in your browser. You should see "LLM Chat Interface" with "Frontend coming soon..." message.
-
-## Step 5: Verify TypeScript Compilation
-
-### Backend
-```bash
-cd backend
-npm run type-check
-```
-
-Should complete without errors.
-
-### Frontend
-```bash
-cd frontend
-npm run type-check
-```
-
-Should complete without errors.
+1. **Isolation**: Each test should be independent
+2. **Mocking**: Mock external dependencies (APIs, file system)
+3. **Coverage**: Aim for high coverage on critical paths
+4. **Readability**: Use descriptive test names and clear assertions
+5. **Speed**: Keep tests fast (unit tests should be < 1s each)
 
 ## Troubleshooting
 
-### Port already in use
-If port 3001 or 3000 is already in use:
-- Change `PORT` in `.env` (backend)
-- Change port in `vite.config.ts` (frontend)
+### Backend Tests
 
-### Module not found errors
-- Make sure you ran `npm install` in both directories
-- Delete `node_modules` and `package-lock.json`, then reinstall
+- **Module not found**: Ensure `ts-jest` is properly configured
+- **Mock not working**: Check that mocks are set up before imports
+- **Type errors**: Ensure `@types/jest` is installed
 
-### TypeScript errors
-- Run `npm run type-check` to see detailed errors
-- Ensure all dependencies are installed
+### Frontend Tests
 
-### CORS errors
-- Verify `CORS_ORIGIN` in `.env` matches frontend URL (default: http://localhost:3000)
+- **DOM not found**: Ensure `jsdom` environment is set in `vite.config.ts`
+- **React hooks errors**: Use `@testing-library/react` hooks utilities
+- **Async issues**: Use `waitFor` from testing library for async operations
 
-## Quick Test Script
+## Next Steps
 
-You can also create a simple test script:
-
-```bash
-#!/bin/bash
-# test-setup.sh
-
-echo "Testing backend health endpoint..."
-curl -s http://localhost:3001/health | jq . || echo "Backend not running or jq not installed"
-
-echo "Testing frontend..."
-curl -s http://localhost:3000 | grep -q "LLM Chat Interface" && echo "Frontend OK" || echo "Frontend not running"
-```
-
+- [ ] Add E2E tests with Playwright or Cypress
+- [ ] Set up test coverage reporting in CI
+- [ ] Add visual regression tests for UI components
+- [ ] Performance testing for API endpoints
