@@ -155,11 +155,169 @@ docker-compose build frontend
 
 ## API Endpoints
 
-- `GET /health` - Health check endpoint
-- `GET /api/providers` - List available LLM providers and their status
-- `POST /api/chat` - Send chat message to selected LLM provider
-  - Request body: `{ provider: string, messages: Message[], model?: string }`
-  - Response: `{ message: string, provider: string, model: string }`
+### `GET /health`
+Health check endpoint to verify the server is running.
+
+**Example Request:**
+```bash
+curl http://localhost:3001/health
+```
+
+**Example Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-12-27T13:36:52.461Z"
+}
+```
+
+---
+
+### `GET /api/providers`
+List all available LLM providers and their availability status. Used by the frontend to populate the provider selector dropdown.
+
+**Example Request:**
+```bash
+curl http://localhost:3001/api/providers
+```
+
+**Example Response:**
+```json
+{
+  "providers": [
+    {
+      "id": "openai",
+      "name": "OpenAI GPT",
+      "available": true
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic Claude",
+      "available": true
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "available": true
+    }
+  ]
+}
+```
+
+**Usage in Frontend:**
+- The `useChat` hook calls this endpoint on mount to load available providers
+- Only providers with `available: true` are shown in the UI
+- The frontend automatically selects the first available provider
+
+---
+
+### `POST /api/chat`
+Send a chat message to the selected LLM provider. This is the main endpoint for chat functionality.
+
+**Request Body:**
+```typescript
+{
+  provider: "openai" | "anthropic" | "gemini",  // Required: which LLM provider to use
+  messages: [                                     // Required: conversation history
+    {
+      role: "user" | "assistant" | "system",     // Required: message role
+      content: string                             // Required: message content (min 1 char)
+    }
+  ],
+  model?: string                                  // Optional: override default model
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openai",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello! What is TypeScript?"
+      }
+    ]
+  }'
+```
+
+**Example Response:**
+```json
+{
+  "message": "TypeScript is a statically typed superset of JavaScript...",
+  "provider": "openai",
+  "model": "gpt-4"
+}
+```
+
+**Error Responses:**
+
+*400 Bad Request* - Invalid request format:
+```json
+{
+  "error": "Invalid request",
+  "details": [
+    {
+      "path": ["provider"],
+      "message": "Invalid enum value. Expected 'openai' | 'anthropic' | 'gemini'"
+    }
+  ]
+}
+```
+
+*500 Internal Server Error* - Provider unavailable or API error:
+```json
+{
+  "error": "Chat request failed",
+  "message": "Provider 'openai' is not available. Please check your API keys."
+}
+```
+
+**Usage in Frontend:**
+- The `useChat` hook's `sendMessage()` function calls this endpoint
+- Messages array includes the full conversation history (for context)
+- The last message in the array must have `role: "user"`
+- The response includes the actual model used (which may differ from requested model)
+- The frontend displays the model name next to assistant messages
+
+**Example Multi-turn Conversation:**
+```bash
+# First message
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openai",
+    "messages": [
+      { "role": "user", "content": "What is React?" }
+    ]
+  }'
+
+# Follow-up message (includes conversation history)
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openai",
+    "messages": [
+      { "role": "user", "content": "What is React?" },
+      { "role": "assistant", "content": "React is a JavaScript library..." },
+      { "role": "user", "content": "How does it differ from Vue?" }
+    ]
+  }'
+```
+
+**Model Override:**
+You can optionally specify a different model than the default:
+```bash
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openai",
+    "messages": [{ "role": "user", "content": "Hello" }],
+    "model": "gpt-3.5-turbo"
+  }'
+```
 
 ## Architecture
 

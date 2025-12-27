@@ -302,29 +302,29 @@ graph TB
 ```mermaid
 graph TB
     subgraph "Frontend Stack"
-        React[React 18]
-        TypeScript[TypeScript]
-        Vite[Vite]
-        CSS[CSS]
+        React["React 18"]
+        TypeScript["TypeScript"]
+        Vite["Vite"]
+        CSS["CSS"]
     end
 
     subgraph "Backend Stack"
-        Express[Express.js]
-        NodeJS[Node.js]
-        TSBackend[TypeScript]
-        Zod[Zod Validation]
+        Express["Express.js"]
+        NodeJS["Node.js"]
+        TSBackend["TypeScript"]
+        Zod["Zod Validation"]
     end
 
     subgraph "LLM SDKs"
-        OpenAISDK[openai SDK]
-        AnthropicSDK[@anthropic-ai/sdk]
-        GeminiSDK[@google/generative-ai]
+        OpenAISDK["openai SDK"]
+        AnthropicSDK["@anthropic-ai/sdk"]
+        GeminiSDK["@google/generative-ai"]
     end
 
     subgraph "Infrastructure"
-        Docker[Docker]
-        DockerCompose[Docker Compose]
-        Nginx[Nginx]
+        Docker["Docker"]
+        DockerCompose["Docker Compose"]
+        Nginx["Nginx"]
     end
 
     React --> TypeScript
@@ -339,7 +339,7 @@ graph TB
     Docker --> Nginx
 
     style React fill:#61dafb
-    style Express fill:#000000,color:#fff
+    style Express fill:#000000,color:#ffffff
     style Docker fill:#0db7ed
 ```
 
