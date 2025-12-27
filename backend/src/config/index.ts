@@ -28,6 +28,11 @@ export const config = {
       apiKey: process.env.GOOGLE_API_KEY || '',
       defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
     },
+    ollama: {
+      baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+      // Default to mistral (faster, smaller) or use llama3 for better quality
+      defaultModel: process.env.OLLAMA_DEFAULT_MODEL || 'mistral',
+    },
   } as LLMConfig,
 } as const;
 

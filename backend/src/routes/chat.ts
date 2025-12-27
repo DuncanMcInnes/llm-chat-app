@@ -7,7 +7,7 @@ const router = Router();
 
 // Validation schema for chat request
 const chatRequestSchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'gemini']),
+  provider: z.enum(['openai', 'anthropic', 'gemini', 'ollama']),
   messages: z.array(
     z.object({
       role: z.enum(['user', 'assistant', 'system']),

@@ -9,7 +9,7 @@ export interface Message {
   content: string;
 }
 
-export type LLMProvider = 'openai' | 'anthropic' | 'gemini';
+export type LLMProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama';
 
 export interface ChatRequest {
   provider: LLMProvider;
@@ -41,6 +41,10 @@ export interface LLMConfig {
   gemini?: {
     apiKey: string;
     defaultModel?: string;
+  };
+  ollama?: {
+    baseUrl?: string; // Default: http://localhost:11434
+    defaultModel?: string; // Default: llama2
   };
 }
 

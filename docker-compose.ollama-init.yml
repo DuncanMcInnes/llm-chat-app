@@ -1,0 +1,34 @@
+# Optional: Use this to automatically pull models when OLLAMA starts
+# This is a helper script - you can run it manually or integrate it into your workflow
+
+version: '3.8'
+
+services:
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: ollama-init-helper
+    volumes:
+      - ollama-data:/root/.ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for OLLAMA to be ready..."
+        sleep 10
+        echo "Pulling Mistral 7B..."
+        ollama pull mistral
+        echo "Pulling LLaMA3 8B..."
+        ollama pull llama3
+        echo "Models pulled successfully!"
+    networks:
+      - llm-chat-network
+    depends_on:
+      - ollama
+
+volumes:
+  ollama-data:
+    external: true
+
+networks:
+  llm-chat-network:
+    external: true
+

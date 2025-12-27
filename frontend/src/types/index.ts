@@ -6,7 +6,7 @@ export interface Message {
   model?: string; // Optional: model used for assistant messages
 }
 
-export type LLMProviderId = 'openai' | 'anthropic' | 'gemini';
+export type LLMProviderId = 'openai' | 'anthropic' | 'gemini' | 'ollama';
 
 export interface ProviderInfo {
   id: LLMProviderId;

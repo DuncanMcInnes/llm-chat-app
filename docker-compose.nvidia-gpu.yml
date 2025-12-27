@@ -1,3 +1,6 @@
+# Docker Compose for Linux with NVIDIA GPU support
+# Requires: NVIDIA Container Toolkit installed
+
 services:
   backend:
     build:
@@ -69,14 +72,13 @@ services:
       start_period: 30s
     networks:
       - llm-chat-network
-    # Uncomment the following lines if you have NVIDIA GPU support
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   ollama-data:

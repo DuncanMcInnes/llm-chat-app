@@ -62,9 +62,10 @@ export class ChatService {
       openai: 'OpenAI GPT',
       anthropic: 'Anthropic Claude',
       gemini: 'Google Gemini',
+      ollama: 'OLLAMA (Local)',
     };
 
-    const allProviders: LLMProvider[] = ['openai', 'anthropic', 'gemini'];
+    const allProviders: LLMProvider[] = ['openai', 'anthropic', 'gemini', 'ollama'];
     
     return allProviders.map(id => ({
       id,

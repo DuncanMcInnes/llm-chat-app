@@ -2,6 +2,7 @@ import { LLMProvider } from './LLMProvider';
 import { OpenAIService } from './OpenAIService';
 import { AnthropicService } from './AnthropicService';
 import { GeminiService } from './GeminiService';
+import { OllamaService } from './OllamaService';
 import { LLMProvider as ProviderType } from '../../types';
 import { config } from '../../config';
 
@@ -40,6 +41,16 @@ export class LLMFactory {
       this.providers.set('gemini', new GeminiService(
         config.llm.gemini.apiKey,
         config.llm.gemini.defaultModel ?? 'gemini-pro'
+      ));
+    }
+
+    // Initialize OLLAMA (local LLM)
+    // OLLAMA doesn't require API keys, just a base URL
+    // Always initialize OLLAMA if config is available
+    if (config.llm.ollama && config.llm.ollama.baseUrl) {
+      this.providers.set('ollama', new OllamaService(
+        config.llm.ollama.baseUrl,
+        config.llm.ollama.defaultModel ?? 'mistral'
       ));
     }
   }
