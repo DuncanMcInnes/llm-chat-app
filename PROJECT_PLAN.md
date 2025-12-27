@@ -268,6 +268,204 @@ llm-chat-app/
    - Integration with CI/CD (optional)
    - Test coverage reporting
 
+### Phase 8: Document Processing & Summarization
+**Goal**: Add ability to process and summarize documents (Word, PDF)
+
+1. File upload infrastructure
+   - Add file upload endpoint (`POST /api/documents/upload`)
+   - Configure multer for file handling
+   - File validation (type, size limits)
+   - Storage management (temporary or persistent)
+
+2. PDF processing
+   - Install PDF parsing library (pdf-parse, pdfjs-dist)
+   - Extract text from PDFs
+   - Handle multi-page documents
+   - Text chunking for processing
+
+3. Word document processing
+   - Install docx parsing library (mammoth or docx)
+   - Extract text and structure
+   - Preserve formatting metadata (optional)
+
+4. Document summarization service
+   - Create `DocumentService` for processing
+   - Integrate with existing LLM providers
+   - Configurable summary length
+   - Store summaries for RAG (optional)
+
+5. Frontend file upload UI
+   - File upload component
+   - Progress indicators
+   - Document list view
+   - Summary display
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
+### Phase 9: Video & Web Content Processing
+**Goal**: Extend processing to YouTube videos and web pages
+
+1. YouTube video processing
+   - Install youtube-transcript or yt-dlp
+   - Extract video transcripts
+   - Extract metadata (title, description, duration)
+   - Handle different video formats
+
+2. Web page processing
+   - Install Puppeteer or Playwright for headless browser
+   - Extract text content from web pages
+   - Handle JavaScript-rendered content
+   - Clean HTML to text
+
+3. Content summarization
+   - Extend DocumentService to handle video/web content
+   - Unified summarization interface
+   - Content type detection
+
+4. Frontend content input
+   - YouTube URL input
+   - Web page URL input
+   - Content type selector
+   - Processing status
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
+### Phase 10: Vector Database & Embeddings
+**Goal**: Set up vector storage for RAG pipelines
+
+1. Vector database selection & setup
+   - Choose vector DB (Chroma for local, Pinecone/Qdrant for cloud)
+   - Docker container for local DB
+   - Database schema/collections setup
+
+2. Embedding service
+   - Create `EmbeddingService` abstraction
+   - Support multiple embedding models:
+     - OpenAI embeddings
+     - OLLAMA embeddings (local)
+     - Open-source alternatives
+   - Model selection per use case
+
+3. Document chunking & indexing
+   - Implement chunking strategies:
+     - Fixed-size chunks
+     - Semantic chunking
+     - Overlap strategies
+   - Index documents with metadata
+   - Batch processing
+
+4. Retrieval service
+   - Create `RetrievalService` for similarity search
+   - Configurable retrieval parameters:
+     - Top-K results
+     - Similarity threshold
+     - Metadata filtering
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
+### Phase 11: RAG Pipeline Configuration
+**Goal**: Build configurable RAG (Retrieval Augmented Generation) system
+
+1. RAG pipeline abstraction
+   - Create `RAGPipeline` interface
+   - Pipeline components:
+     - Document loader
+     - Chunker
+     - Embedder
+     - Retriever
+     - LLM provider
+   - Configuration schema
+
+2. Pipeline builder
+   - Create `RAGPipelineBuilder` for configuration
+   - Preset configurations (simple, advanced, etc.)
+   - Custom pipeline creation
+   - Pipeline validation
+
+3. RAG query service
+   - Create `RAGQueryService`
+   - Query flow:
+     1. Generate query embedding
+     2. Retrieve relevant chunks
+     3. Build context
+     4. Generate response with LLM
+   - Context window management
+
+4. Frontend RAG configuration UI
+   - Pipeline configuration interface
+   - Model selection per component
+   - Chunking strategy selection
+   - Test/validate pipeline
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
+### Phase 12: Agent Framework Integration
+**Goal**: Add LangChain agents with tool calling and MCP support
+
+1. LangChain setup
+   - Install LangChain.js
+   - Create agent abstraction layer
+   - Agent types: ReAct, Plan-and-Execute, etc.
+
+2. Tool system
+   - Create `Tool` interface
+   - Implement tools:
+     - Web search (SerpAPI, Tavily, etc.)
+     - Calculator
+     - Code execution (sandboxed)
+     - Custom tools
+   - Tool registry
+
+3. MCP integration
+   - Install MCP client library
+   - Create `MCPService` for MCP server communication
+   - MCP server discovery
+   - Tool exposure from MCP
+
+4. Agent service
+   - Create `AgentService`
+   - Agent orchestration
+   - Tool selection and execution
+   - Error handling and retries
+
+5. Agent UI
+   - Agent mode toggle
+   - Tool selection interface
+   - Agent execution visualization
+   - Tool execution logs
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
+### Phase 13: Unified Workflow & Integration
+**Goal**: Integrate all features into cohesive workflow
+
+1. Workflow builder
+   - Create workflow configuration
+   - Combine: document processing → RAG → agent tools
+   - Workflow templates
+
+2. Model selection per task
+   - Task-specific model selection:
+     - Document processing model
+     - Embedding model
+     - RAG query model
+     - Agent reasoning model
+   - Model performance tracking
+
+3. Advanced features
+   - Multi-document RAG
+   - Cross-document queries
+   - Agent + RAG integration
+   - Workflow persistence
+
+4. UI integration
+   - Unified interface for all features
+   - Workflow builder UI
+   - Model selection per component
+   - Results visualization
+
+**See**: `EXTENSION_PLAN.md` for detailed breakdown
+
 ## Environment Variables
 
 ### Backend
@@ -438,6 +636,16 @@ REACT_APP_API_URL=http://localhost:3001
 - [x] Mac M-series Metal acceleration tested
 - [ ] Test on Linux with NVIDIA GPU (if available)
 - [ ] Performance benchmarking
+
+### Future Extensions (Phases 8-13)
+- [ ] Phase 8: Document Processing & Summarization
+- [ ] Phase 9: Video & Web Content Processing
+- [ ] Phase 10: Vector Database & Embeddings
+- [ ] Phase 11: RAG Pipeline Configuration
+- [ ] Phase 12: Agent Framework Integration
+- [ ] Phase 13: Unified Workflow & Integration
+
+**See**: `EXTENSION_PLAN.md` for detailed extension planning, technical considerations, and clarifying questions
 
 ## Notes
 - MVP focus: Keep it simple, add features incrementally
