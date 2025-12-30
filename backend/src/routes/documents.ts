@@ -49,28 +49,46 @@ const summarizeRequestSchema = z.object({
  * Upload and process a document
  */
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
+  const memUsage = () => {
+    const usage = process.memoryUsage();
+    return `Heap: ${Math.round(usage.heapUsed / 1024 / 1024)}MB / ${Math.round(usage.heapTotal / 1024 / 1024)}MB, RSS: ${Math.round(usage.rss / 1024 / 1024)}MB`;
+  };
+
   try {
+    console.log(`[UPLOAD] Starting upload - ${memUsage()}`);
+    
     if (!req.file) {
+      console.log('[UPLOAD] Error: No file uploaded');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const file = req.file;
+    console.log(`[UPLOAD] File received: ${file.originalname}, size: ${file.size} bytes, path: ${file.path} - ${memUsage()}`);
+    
     const mimeType = file.mimetype as keyof typeof storageConfig.allowedMimeTypes;
     const documentType = storageConfig.allowedMimeTypes[mimeType] as DocumentType;
 
     if (!documentType) {
+      console.log(`[UPLOAD] Error: Unsupported file type: ${file.mimetype}`);
       return res.status(400).json({ error: 'Unsupported file type' });
     }
 
+    console.log(`[UPLOAD] Document type detected: ${documentType} - ${memUsage()}`);
+
     // Create document ID
     const documentId = uuidv4();
+    console.log(`[UPLOAD] Document ID generated: ${documentId} - ${memUsage()}`);
 
     // Extract text from document
+    console.log(`[UPLOAD] Starting text extraction from: ${file.path} - ${memUsage()}`);
     const text = await DocumentService.extractText(file.path, documentType);
+    console.log(`[UPLOAD] Text extracted: ${text.length} characters - ${memUsage()}`);
 
     // Save extracted text
     const contentPath = path.join(storageConfig.baseDir, `${documentId}.txt`);
+    console.log(`[UPLOAD] Saving content to: ${contentPath} - ${memUsage()}`);
     fs.writeFileSync(contentPath, text, 'utf-8');
+    console.log(`[UPLOAD] Content saved - ${memUsage()}`);
 
     // Create metadata
     const metadata: DocumentMetadata = {
@@ -83,24 +101,40 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       chunkCount: 0,
       indexed: false,
     };
+    console.log(`[UPLOAD] Metadata created - ${memUsage()}`);
 
     // Chunk the document
+    console.log(`[UPLOAD] Starting chunking (text length: ${text.length}) - ${memUsage()}`);
     const chunks = DocumentService.chunkText(text, 1000, 200);
+    console.log(`[UPLOAD] Chunking complete: ${chunks.length} chunks created - ${memUsage()}`);
+    
     chunks.forEach(chunk => {
       chunk.documentId = documentId;
     });
     metadata.chunkCount = chunks.length;
+    console.log(`[UPLOAD] Chunks processed - ${memUsage()}`);
 
     // Save chunks (for future RAG indexing)
     const chunksPath = path.join(storageConfig.baseDir, `${documentId}.chunks.json`);
-    fs.writeFileSync(chunksPath, JSON.stringify(chunks, null, 2));
+    console.log(`[UPLOAD] Stringifying chunks (${chunks.length} chunks) - ${memUsage()}`);
+    const chunksJson = JSON.stringify(chunks, null, 2);
+    console.log(`[UPLOAD] Chunks stringified: ${chunksJson.length} bytes - ${memUsage()}`);
+    
+    console.log(`[UPLOAD] Saving chunks to: ${chunksPath} - ${memUsage()}`);
+    fs.writeFileSync(chunksPath, chunksJson);
+    console.log(`[UPLOAD] Chunks saved - ${memUsage()}`);
 
     // Save metadata
+    console.log(`[UPLOAD] Saving metadata - ${memUsage()}`);
     DocumentService.saveMetadata(metadata);
+    console.log(`[UPLOAD] Metadata saved - ${memUsage()}`);
 
     // Clean up uploaded file
+    console.log(`[UPLOAD] Cleaning up temp file: ${file.path} - ${memUsage()}`);
     fs.unlinkSync(file.path);
+    console.log(`[UPLOAD] Temp file deleted - ${memUsage()}`);
 
+    console.log(`[UPLOAD] Upload complete - ${memUsage()}`);
     return res.status(201).json({
       document: metadata,
       message: 'Document uploaded and processed successfully',

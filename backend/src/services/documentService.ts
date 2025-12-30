@@ -83,11 +83,24 @@ export class DocumentService {
     chunkSize: number = 1000,
     overlap: number = 200
   ): DocumentChunk[] {
+    console.log(`[CHUNK] Starting chunking: text length=${text.length}, chunkSize=${chunkSize}, overlap=${overlap}`);
     const chunks: DocumentChunk[] = [];
     let startIndex = 0;
     let chunkIndex = 0;
+    let iterations = 0;
+    const maxIterations = 100000; // Safety limit
 
     while (startIndex < text.length) {
+      iterations++;
+      if (iterations > maxIterations) {
+        console.error(`[CHUNK] ERROR: Exceeded max iterations (${maxIterations}), breaking loop`);
+        break;
+      }
+
+      if (iterations % 100 === 0) {
+        console.log(`[CHUNK] Iteration ${iterations}: startIndex=${startIndex}, text.length=${text.length}`);
+      }
+
       const endIndex = Math.min(startIndex + chunkSize, text.length);
       const content = text.slice(startIndex, endIndex);
 
@@ -101,14 +114,18 @@ export class DocumentService {
       });
 
       // Move start index forward, accounting for overlap
-      startIndex = endIndex - overlap;
+      const newStartIndex = endIndex - overlap;
       
       // Prevent infinite loop
-      if (startIndex >= endIndex) {
+      if (newStartIndex >= endIndex || newStartIndex <= startIndex) {
+        console.log(`[CHUNK] Breaking loop: newStartIndex=${newStartIndex}, endIndex=${endIndex}, startIndex=${startIndex}`);
         break;
       }
+      
+      startIndex = newStartIndex;
     }
 
+    console.log(`[CHUNK] Chunking complete: ${chunks.length} chunks created in ${iterations} iterations`);
     return chunks;
   }
 
