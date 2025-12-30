@@ -25,16 +25,16 @@ flowchart TD
     DOCXExtract --> SaveContent
     TXTExtract --> SaveContent
     
-    SaveContent[Save extracted text to<br/>storage/documents/{id}.txt]
+    SaveContent["Save extracted text to<br/>storage/documents/[id].txt"]
     
     SaveContent --> ChunkText[DocumentService.chunkText]
     ChunkText --> ChunkConfig[Chunk size: 1000 chars<br/>Overlap: 200 chars]
-    ChunkConfig --> CreateChunks[Create DocumentChunk[]<br/>with metadata]
-    CreateChunks --> SaveChunks[Save chunks to<br/>storage/documents/{id}.chunks.json]
+    ChunkConfig --> CreateChunks["Create DocumentChunk array<br/>with metadata"]
+    CreateChunks --> SaveChunks["Save chunks to<br/>storage/documents/[id].chunks.json"]
     
     SaveChunks --> CreateMetadata[Create DocumentMetadata]
-    CreateMetadata --> MetadataFields[ID, filename, type, size<br/>uploadedAt, processedAt<br/>chunkCount, indexed=false]
-    MetadataFields --> SaveMetadata[Save to<br/>storage/documents/{id}.metadata.json]
+    CreateMetadata --> MetadataFields["ID, filename, type, size<br/>uploadedAt, processedAt<br/>chunkCount, indexed=false"]
+    MetadataFields --> SaveMetadata["Save to<br/>storage/documents/[id].metadata.json"]
     
     SaveMetadata --> CleanupTemp[Delete temp uploaded file]
     CleanupTemp --> ReturnSuccess[Return 201: Document metadata]
@@ -61,11 +61,11 @@ flowchart TD
     
     LoadMetadata --> DocExists{Document exists?}
     DocExists -->|No| Error2[Return 404: Document not found]
-    DocExists -->|Yes| LoadContent[Load text from<br/>storage/documents/{id}.txt]
+    DocExists -->|Yes| LoadContent["Load text from<br/>storage/documents/[id].txt"]
     
     LoadContent --> ContentExists{Content exists?}
     ContentExists -->|No| Error3[Return 404: Content not found]
-    ContentExists -->|Yes| GetLLMProvider[LLMFactory.getProvider]
+    ContentExists -->|Yes| GetLLMProvider["LLMFactory.getProvider"]
     
     GetLLMProvider --> ProviderAvailable{Provider available?}
     ProviderAvailable -->|No| Error4[Return 500: Provider unavailable]
@@ -101,15 +101,15 @@ graph TD
     Storage[storage/] --> Documents[documents/]
     Storage --> Uploads[uploads/]
     
-    Documents --> MetaFile[{id}.metadata.json]
-    Documents --> ContentFile[{id}.txt]
-    Documents --> ChunksFile[{id}.chunks.json]
+    Documents --> MetaFile["[id].metadata.json"]
+    Documents --> ContentFile["[id].txt"]
+    Documents --> ChunksFile["[id].chunks.json"]
     
     MetaFile --> MetaContent[DocumentMetadata:<br/>- id, filename, type<br/>- size, uploadedAt<br/>- processedAt, summary<br/>- chunkCount, indexed]
     
     ContentFile --> TextContent[Extracted text content<br/>plain text format]
     
-    ChunksFile --> ChunksContent[DocumentChunk[]:<br/>- id, documentId<br/>- content, chunkIndex<br/>- startChar, endChar<br/>- metadata]
+    ChunksFile --> ChunksContent["DocumentChunk array:<br/>- id, documentId<br/>- content, chunkIndex<br/>- startChar, endChar<br/>- metadata"]
     
     Uploads --> TempFiles[Temporary uploaded files<br/>Deleted after processing]
     
