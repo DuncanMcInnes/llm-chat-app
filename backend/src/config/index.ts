@@ -12,7 +12,7 @@ dotenv.config(); // fallback to default .env lookup in backend directory
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3004',
   llm: {
     openai: {
       apiKey: process.env.OPENAI_API_KEY || '',

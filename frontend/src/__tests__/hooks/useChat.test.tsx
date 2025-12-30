@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useChat } from '../../hooks/useChat';
 import * as api from '../../services/api';
+import type { ProviderInfo, ChatResponse, LLMProviderId } from '../../types';
 
 // Mock the API service
 vi.mock('../../services/api');
@@ -26,9 +27,9 @@ describe('useChat', () => {
   });
 
   it('should load providers on mount', async () => {
-    const mockProviders = [
-      { id: 'openai', name: 'OpenAI GPT', available: true },
-      { id: 'anthropic', name: 'Anthropic Claude', available: true },
+    const mockProviders: ProviderInfo[] = [
+      { id: 'openai' as LLMProviderId, name: 'OpenAI GPT', available: true },
+      { id: 'anthropic' as LLMProviderId, name: 'Anthropic Claude', available: true },
     ];
 
     vi.mocked(api.fetchProviders).mockResolvedValue(mockProviders);
@@ -77,9 +78,9 @@ describe('useChat', () => {
       { id: 'openai', name: 'OpenAI GPT', available: true },
     ]);
 
-    const mockResponse = {
+    const mockResponse: ChatResponse = {
       message: 'Hello! How can I help?',
-      provider: 'openai',
+      provider: 'openai' as LLMProviderId,
       model: 'gpt-4',
     };
 

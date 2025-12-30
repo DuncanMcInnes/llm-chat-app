@@ -6,11 +6,11 @@ services:
       target: production
     container_name: llm-chat-backend
     ports:
-      - "3001:3001"
+      - "3003:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - CORS_ORIGIN=http://localhost:3000
+      - CORS_ORIGIN=http://localhost:3004
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_DEFAULT_MODEL=${OPENAI_DEFAULT_MODEL:-gpt-4}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -40,7 +40,7 @@ services:
       target: production
     container_name: llm-chat-frontend
     ports:
-      - "3000:80"
+      - "3004:80"
     depends_on:
       - backend
     restart: unless-stopped

@@ -35,6 +35,10 @@ COPY --from=builder /app/dist ./dist
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Create storage directories with proper permissions
+RUN mkdir -p /app/storage/documents /app/storage/uploads && \
+    chown -R nodejs:nodejs /app/storage
+
 USER nodejs
 
 # Expose port
