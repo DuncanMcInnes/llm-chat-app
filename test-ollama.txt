@@ -1,0 +1,1 @@
+This is a test document for OLLAMA summarization. It contains multiple paragraphs to test the chunking and summarization capabilities. The document discusses various topics including technology, artificial intelligence, and machine learning. We want to see if OLLAMA can effectively summarize this content into a concise overview.
