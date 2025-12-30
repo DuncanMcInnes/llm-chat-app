@@ -2,8 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import mammoth from 'mammoth';
 
-// pdf-parse is a CommonJS module, use require
-const pdfParse = require('pdf-parse');
+// pdf-parse is a CommonJS module
+// In v2.x, it exports PDFParse class which takes {data: buffer} and has getText() method
+const pdfParseModule = require('pdf-parse');
+const PDFParseClass = pdfParseModule.PDFParse;
+
+if (!PDFParseClass || typeof PDFParseClass !== 'function') {
+  throw new Error('PDFParse class not found in pdf-parse module');
+}
 import { DocumentMetadata, DocumentType, DocumentChunk, CleanupPolicy } from '../types/documents';
 import { LLMFactory } from './llm/LLMFactory';
 import { Message } from '../types';
@@ -19,10 +25,33 @@ export class DocumentService {
    */
   static async extractTextFromPDF(filePath: string): Promise<string> {
     try {
+      console.log(`[EXTRACT] Reading PDF file: ${filePath}`);
+      const stats = fs.statSync(filePath);
+      console.log(`[EXTRACT] PDF file size: ${stats.size} bytes`);
+      
       const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdfParse(dataBuffer);
+      console.log(`[EXTRACT] PDF buffer loaded: ${dataBuffer.length} bytes`);
+      
+      console.log(`[EXTRACT] Creating PDFParse instance...`);
+      const parser = new PDFParseClass({ data: dataBuffer });
+      console.log(`[EXTRACT] Extracting text from PDF...`);
+      const textResult = await parser.getText();
+      console.log(`[EXTRACT] PDF text extracted: ${textResult.text ? textResult.text.length : 0} characters`);
+      
+      if (!textResult || !textResult.text) {
+        throw new Error('No text extracted from PDF');
+      }
+      
+      const data = { text: textResult.text };
+      console.log(`[EXTRACT] PDF parsed: ${data.text ? data.text.length : 0} characters extracted`);
+      
+      if (!data || !data.text) {
+        throw new Error('No text extracted from PDF');
+      }
+      
       return data.text;
     } catch (error) {
+      console.error(`[EXTRACT] PDF extraction error:`, error);
       if (error instanceof Error) {
         throw new Error(`Failed to extract text from PDF: ${error.message}`);
       }
