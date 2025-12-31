@@ -44,6 +44,8 @@ const summarizeRequestSchema = z.object({
   model: z.string().optional(),
 });
 
+// Chunking parameters are parsed from form fields in the upload route
+
 /**
  * POST /api/documents/upload
  * Upload and process a document
@@ -90,6 +92,15 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     fs.writeFileSync(contentPath, text, 'utf-8');
     console.log(`[UPLOAD] Content saved - ${memUsage()}`);
 
+    // Parse optional chunking parameters from form fields
+    const chunkSize = req.body.chunkSize ? parseInt(req.body.chunkSize, 10) : 1000;
+    const overlap = req.body.overlap ? parseInt(req.body.overlap, 10) : 200;
+    const chunkingStrategy = (req.body.chunkingStrategy || 'fixed') as 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    
+    // Validate chunking parameters
+    const validatedChunkSize = Math.max(100, Math.min(10000, chunkSize));
+    const validatedOverlap = Math.max(0, Math.min(1000, overlap));
+
     // Create metadata
     const metadata: DocumentMetadata = {
       id: documentId,
@@ -99,13 +110,18 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       uploadedAt: new Date(),
       processedAt: new Date(),
       chunkCount: 0,
+      chunkingSchema: {
+        chunkSize: validatedChunkSize,
+        overlap: validatedOverlap,
+        strategy: chunkingStrategy,
+      },
       indexed: false,
     };
     console.log(`[UPLOAD] Metadata created - ${memUsage()}`);
 
     // Chunk the document
-    console.log(`[UPLOAD] Starting chunking (text length: ${text.length}) - ${memUsage()}`);
-    const chunks = DocumentService.chunkText(text, 1000, 200);
+    console.log(`[UPLOAD] Starting chunking (text length: ${text.length}, chunkSize: ${validatedChunkSize}, overlap: ${validatedOverlap}) - ${memUsage()}`);
+    const chunks = DocumentService.chunkText(text, validatedChunkSize, validatedOverlap);
     console.log(`[UPLOAD] Chunking complete: ${chunks.length} chunks created - ${memUsage()}`);
     
     chunks.forEach(chunk => {
@@ -194,17 +210,23 @@ router.post('/:id/summarize', async (req: Request, res: Response) => {
     const text = fs.readFileSync(contentPath, 'utf-8');
 
     // Summarize document
-    const summary = await DocumentService.summarizeDocument(text, provider, model);
+    const summaryResult = await DocumentService.summarizeDocument(text, provider, model);
 
-    // Update metadata with summary
-    metadata.summary = summary;
+    // Update metadata with summary and summary metadata
+    metadata.summary = summaryResult.summary;
+    metadata.summaryMetadata = {
+      provider: summaryResult.provider,
+      model: summaryResult.model || 'default',
+      createdAt: new Date(),
+    };
     DocumentService.saveMetadata(metadata);
 
     return res.json({
       documentId,
-      summary,
-      provider,
-      model: model || 'default',
+      summary: summaryResult.summary,
+      provider: summaryResult.provider,
+      model: summaryResult.model,
+      summaryMetadata: metadata.summaryMetadata,
     });
   } catch (error) {
     console.error('Document summarization error:', error);

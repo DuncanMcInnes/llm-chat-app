@@ -160,16 +160,20 @@ export class DocumentService {
 
   /**
    * Summarize document using LLM
+   * Returns both the summary text and metadata about the summarization
    */
   static async summarizeDocument(
     text: string,
     provider: string = 'openai',
     model?: string
-  ): Promise<string> {
+  ): Promise<{ summary: string; provider: string; model: string }> {
     const llmProvider = LLMFactory.getProvider(provider as any);
     if (!llmProvider) {
       throw new Error(`Provider '${provider}' is not available`);
     }
+
+    // Use default model if not specified
+    const modelToUse = model || llmProvider.getDefaultModel();
 
     // Create summarization prompt
     const messages: Message[] = [
@@ -184,8 +188,12 @@ export class DocumentService {
     ];
 
     try {
-      const result = await llmProvider.chat(messages, model);
-      return result.content;
+      const result = await llmProvider.chat(messages, modelToUse);
+      return {
+        summary: result.content,
+        provider,
+        model: result.model || modelToUse,
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to summarize document: ${error.message}`);
@@ -225,13 +233,25 @@ export class DocumentService {
       .map(file => {
         try {
           const data = fs.readFileSync(path.join(storageConfig.baseDir, file), 'utf-8');
-          return JSON.parse(data) as DocumentMetadata;
+          const metadata = JSON.parse(data) as DocumentMetadata;
+          // Ensure dates are Date objects if they're strings
+          if (typeof metadata.uploadedAt === 'string') {
+            metadata.uploadedAt = new Date(metadata.uploadedAt);
+          }
+          if (metadata.processedAt && typeof metadata.processedAt === 'string') {
+            metadata.processedAt = new Date(metadata.processedAt);
+          }
+          return metadata;
         } catch {
           return null;
         }
       })
       .filter((m): m is DocumentMetadata => m !== null)
-      .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+      .sort((a, b) => {
+        const dateA = a.uploadedAt instanceof Date ? a.uploadedAt : new Date(a.uploadedAt);
+        const dateB = b.uploadedAt instanceof Date ? b.uploadedAt : new Date(b.uploadedAt);
+        return dateB.getTime() - dateA.getTime();
+      });
   }
 
   /**
