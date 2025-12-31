@@ -34,6 +34,9 @@ export const config = {
       defaultModel: process.env.OLLAMA_DEFAULT_MODEL || 'mistral',
     },
   } as LLMConfig,
+  chroma: {
+    baseUrl: process.env.CHROMA_BASE_URL || 'http://localhost:8000',
+  },
 } as const;
 
 

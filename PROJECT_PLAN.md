@@ -26,9 +26,29 @@ The project uses a branching strategy to support different deployment scenarios:
 - **LLM Providers**: 
   - **Cloud**: OpenAI (GPT), Anthropic (Claude), Google (Gemini)
   - **Local**: OLLAMA (with hardware-optimized setup)
+- **Vector Database**: Chroma (local), Pinecone/Qdrant (cloud) - Phase 10
 - **Containerization**: Docker + Docker Compose
 - **Package Manager**: npm
 - **Testing**: Jest (backend), Vitest (frontend)
+
+### Knowledge Bases (KBs) - Core Concept
+**Knowledge Bases are the primary abstraction for organizing and managing documents and embeddings in the RAG system.**
+
+- **Multiple KBs**: The app supports multiple persistent Knowledge Bases, each isolated from others
+- **KB Configuration**: Each KB has its own configuration:
+  - **Embedding Model**: Which embedding model to use (OpenAI, OLLAMA, etc.)
+  - **Chunking Strategy**: How to chunk documents (fixed, sentence, paragraph, semantic)
+  - **Chunking Parameters**: Chunk size and overlap settings
+  - **Retrieval Parameters**: Top-K results, similarity threshold
+- **Document Association**: Documents belong to a specific KB
+- **Isolation**: Each KB maintains its own vector collection/namespace
+- **Use Cases**: 
+  - Separate KBs for different projects or domains
+  - Different embedding models for different content types
+  - Different chunking strategies for different document types
+  - Organizational separation (e.g., "Research Papers", "Company Docs", "Personal Notes")
+- **Persistence**: KBs are stored persistently and can be created, updated, and deleted
+- **Migration**: Documents can be moved between KBs (future enhancement)
 
 ### Project Structure
 ```
@@ -37,7 +57,10 @@ llm-chat-app/
 │   ├── src/
 │   │   ├── server.ts          # Express/Fastify server
 │   │   ├── routes/
-│   │   │   └── chat.ts        # Chat API endpoints
+│   │   │   ├── chat.ts        # Chat API endpoints
+│   │   │   ├── documents.ts   # Document API endpoints
+│   │   │   ├── knowledge-bases.ts  # KB API endpoints (Phase 10)
+│   │   │   └── rag.ts         # RAG query endpoints (Phase 11)
 │   │   ├── services/
 │   │   │   ├── llm/
 │   │   │   │   ├── LLMProvider.ts      # Base interface
@@ -46,11 +69,19 @@ llm-chat-app/
 │   │   │   │   ├── GeminiService.ts    # Gemini implementation
 │   │   │   │   ├── OllamaService.ts    # OLLAMA implementation (local-ollama branch)
 │   │   │   │   └── LLMFactory.ts       # Factory pattern
-│   │   │   └── chatService.ts
+│   │   │   ├── chatService.ts
+│   │   │   ├── documentService.ts     # Document processing
+│   │   │   ├── embeddingService.ts     # Embedding generation (Phase 10)
+│   │   │   ├── knowledgeBaseService.ts # KB management (Phase 10)
+│   │   │   ├── retrievalService.ts    # Vector search (Phase 10)
+│   │   │   └── ragService.ts          # RAG pipeline (Phase 11)
 │   │   ├── types/
-│   │   │   └── index.ts       # Shared types
+│   │   │   ├── index.ts       # Shared types
+│   │   │   ├── documents.ts   # Document types
+│   │   │   └── knowledge-bases.ts  # KB types (Phase 10)
 │   │   └── config/
-│   │       └── index.ts       # Configuration
+│   │       ├── index.ts       # Configuration
+│   │       └── storage.ts     # Storage configuration
 │   ├── __tests__/            # Test files
 │   │   ├── unit/             # Unit tests
 │   │   ├── integration/       # Integration tests
@@ -64,9 +95,18 @@ llm-chat-app/
 │   │   │   ├── ChatInterface.tsx
 │   │   │   ├── MessageList.tsx
 │   │   │   ├── MessageInput.tsx
-│   │   │   └── ProviderSelector.tsx
+│   │   │   ├── ProviderSelector.tsx
+│   │   │   ├── Documents.tsx         # Document management
+│   │   │   ├── DocumentUpload.tsx
+│   │   │   ├── DocumentList.tsx
+│   │   │   ├── KnowledgeBases.tsx     # KB management (Phase 10)
+│   │   │   ├── KBSelector.tsx         # KB selection (Phase 10)
+│   │   │   └── RAGInterface.tsx       # RAG query UI (Phase 11)
 │   │   ├── hooks/
-│   │   │   └── useChat.ts
+│   │   │   ├── useChat.ts
+│   │   │   ├── useDocuments.ts
+│   │   │   ├── useKnowledgeBases.ts   # KB management hook (Phase 10)
+│   │   │   └── useRAG.ts              # RAG query hook (Phase 11)
 │   │   ├── services/
 │   │   │   └── api.ts
 │   │   ├── types/
@@ -86,12 +126,14 @@ llm-chat-app/
 ├── test.sh                  # Comprehensive test automation script
 ├── test-api.sh              # API endpoint testing script
 ├── detect-hardware.sh       # Hardware detection (local-ollama branch)
-├── setup-ollama.sh          # Automated OLLAMA setup (local-ollama branch)
+├── setup-ollama.sh        # Automated OLLAMA setup (local-ollama branch)
 ├── README.md                # Main documentation
 ├── README_LOCAL.md          # Local deployment guide (local-ollama branch)
 ├── HARDWARE_SETUP.md       # Hardware-specific setup (local-ollama branch)
 ├── ARCHITECTURE.md          # Architecture diagrams
-└── TESTING.md               # Testing documentation
+├── TESTING.md               # Testing documentation
+├── DOCUMENT_UPLOAD_FLOW.md  # Document processing flow
+└── CHUNKING_LOGIC.md        # Chunking parameter logic
 ```
 
 ## Implementation Phases
@@ -303,7 +345,7 @@ llm-chat-app/
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
 ### Phase 9: Video & Web Content Processing
-**Goal**: Extend processing to YouTube videos and web pages
+**Goal**: Extend processing to YouTube videos and web pages (can be done in parallel with Phase 10)
 
 1. YouTube video processing
    - Install youtube-transcript or yt-dlp
@@ -327,75 +369,124 @@ llm-chat-app/
    - Web page URL input
    - Content type selector
    - Processing status
+   - **KB selection**: Choose which KB to add content to
+
+**Note**: This phase can be done in parallel with Phase 10, or deferred until after RAG is working.
 
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
-### Phase 10: Vector Database & Embeddings
-**Goal**: Set up vector storage for RAG pipelines
+### Phase 10: Vector Database & Knowledge Bases
+**Goal**: Set up vector storage and Knowledge Base (KB) management for RAG pipelines
+
+**Core Concept: Knowledge Bases (KBs)**
+- The app supports **multiple persistent Knowledge Bases**
+- Each KB is a separate, isolated collection of documents and embeddings
+- Each KB has its own configuration:
+  - **Embedding model** (OpenAI, OLLAMA, etc.)
+  - **Chunking strategy** (fixed, sentence, paragraph, semantic)
+  - **Chunking parameters** (chunk size, overlap)
+  - **Retrieval parameters** (top-K, similarity threshold)
+- Documents belong to a specific KB
+- KBs are persistent and can be created, updated, and deleted
+- Use cases: Separate KBs for different projects, domains, or purposes
 
 1. Vector database selection & setup
    - Choose vector DB (Chroma for local, Pinecone/Qdrant for cloud)
    - Docker container for local DB
    - Database schema/collections setup
+   - **KB isolation**: Each KB maps to a separate collection/namespace
 
-2. Embedding service
+2. Knowledge Base management
+   - Create `KnowledgeBaseService` for KB CRUD operations
+   - KB metadata storage:
+     - KB ID, name, description
+     - Created/updated timestamps
+     - Document count, chunk count
+     - Configuration (embedding model, chunking strategy)
+   - KB persistence (file-based or database)
+   - KB validation and constraints
+
+3. Embedding service
    - Create `EmbeddingService` abstraction
    - Support multiple embedding models:
      - OpenAI embeddings
      - OLLAMA embeddings (local)
      - Open-source alternatives
-   - Model selection per use case
+   - **KB-scoped embedding**: Each KB uses its configured embedding model
+   - Model selection per KB
 
-3. Document chunking & indexing
-   - Implement chunking strategies:
-     - Fixed-size chunks
-     - Semantic chunking
-     - Overlap strategies
-   - Index documents with metadata
-   - Batch processing
+4. Document-to-KB association
+   - Update document upload to require KB selection
+   - Link documents to KBs
+   - Migrate existing documents to default KB (if needed)
+   - Document indexing per KB configuration
 
-4. Retrieval service
+5. Chunking & indexing per KB
+   - Apply KB-specific chunking strategy when indexing
+   - Use KB's chunking parameters (size, overlap)
+   - Index documents with KB metadata
+   - Batch processing per KB
+
+6. Retrieval service
    - Create `RetrievalService` for similarity search
-   - Configurable retrieval parameters:
+   - **KB-scoped retrieval**: Search within a specific KB
+   - Configurable retrieval parameters per KB:
      - Top-K results
      - Similarity threshold
      - Metadata filtering
+   - Cross-KB search (optional, for Phase 13)
+
+7. KB API endpoints
+   - `POST /api/knowledge-bases` - Create new KB
+   - `GET /api/knowledge-bases` - List all KBs
+   - `GET /api/knowledge-bases/:id` - Get KB details
+   - `PUT /api/knowledge-bases/:id` - Update KB configuration
+   - `DELETE /api/knowledge-bases/:id` - Delete KB (with cleanup)
+   - `POST /api/knowledge-bases/:id/documents` - Add document to KB
+   - `GET /api/knowledge-bases/:id/documents` - List documents in KB
 
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
 ### Phase 11: RAG Pipeline Configuration
-**Goal**: Build configurable RAG (Retrieval Augmented Generation) system
+**Goal**: Build configurable RAG (Retrieval Augmented Generation) system using Knowledge Bases
 
 1. RAG pipeline abstraction
    - Create `RAGPipeline` interface
+   - **KB-based pipeline**: Each pipeline is associated with a KB
    - Pipeline components:
-     - Document loader
-     - Chunker
-     - Embedder
-     - Retriever
-     - LLM provider
+     - Knowledge Base (source of truth)
+     - Embedder (uses KB's embedding model)
+     - Retriever (searches within KB)
+     - LLM provider (for generation)
    - Configuration schema
 
 2. Pipeline builder
    - Create `RAGPipelineBuilder` for configuration
+   - **KB-first approach**: Select KB, then configure pipeline
    - Preset configurations (simple, advanced, etc.)
    - Custom pipeline creation
    - Pipeline validation
 
 3. RAG query service
    - Create `RAGQueryService`
+   - **KB-scoped queries**: Query a specific KB
    - Query flow:
-     1. Generate query embedding
-     2. Retrieve relevant chunks
-     3. Build context
-     4. Generate response with LLM
+     1. Select target KB
+     2. Generate query embedding (using KB's embedding model)
+     3. Retrieve relevant chunks from KB
+     4. Build context
+     5. Generate response with LLM
    - Context window management
+   - Multi-KB queries (optional, for Phase 13)
 
 4. Frontend RAG configuration UI
+   - KB selection interface
    - Pipeline configuration interface
    - Model selection per component
-   - Chunking strategy selection
+   - Chunking strategy selection (inherited from KB)
    - Test/validate pipeline
+
+**Dependencies**: Phase 10 (Vector DB & Knowledge Bases)
 
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
@@ -437,32 +528,37 @@ llm-chat-app/
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
 ### Phase 13: Unified Workflow & Integration
-**Goal**: Integrate all features into cohesive workflow
+**Goal**: Integrate all features into cohesive workflow with Knowledge Base support
 
 1. Workflow builder
    - Create workflow configuration
-   - Combine: document processing → RAG → agent tools
+   - Combine: document processing → KB indexing → RAG → agent tools
+   - **KB-aware workflows**: Workflows can target specific KBs
    - Workflow templates
 
 2. Model selection per task
    - Task-specific model selection:
      - Document processing model
-     - Embedding model
+     - Embedding model (per KB)
      - RAG query model
      - Agent reasoning model
    - Model performance tracking
 
 3. Advanced features
-   - Multi-document RAG
-   - Cross-document queries
-   - Agent + RAG integration
+   - Multi-KB RAG queries
+   - Cross-KB document queries
+   - KB merging and splitting
+   - Agent + RAG integration (agents can query KBs)
    - Workflow persistence
 
 4. UI integration
    - Unified interface for all features
+   - KB management UI
    - Workflow builder UI
    - Model selection per component
    - Results visualization
+
+**Dependencies**: Phase 10 (Vector DB & Knowledge Bases), Phase 11 (RAG Pipeline)
 
 **See**: `EXTENSION_PLAN.md` for detailed breakdown
 
@@ -529,6 +625,169 @@ REACT_APP_API_URL=http://localhost:3001
 ```
 
 **Note**: `"ollama"` provider appears only in `local-ollama` branch when configured.
+
+### Knowledge Base API (Phase 10)
+
+#### POST /api/knowledge-bases
+**Create a new Knowledge Base**
+**Request:**
+```json
+{
+  "name": "Research Papers",
+  "description": "Academic research papers on AI",
+  "embeddingModel": "openai",
+  "embeddingProvider": "openai",
+  "chunkingStrategy": "sentence",
+  "chunkSize": 1000,
+  "overlap": 200
+}
+```
+
+**Response:**
+```json
+{
+  "id": "kb-uuid-here",
+  "name": "Research Papers",
+  "description": "Academic research papers on AI",
+  "embeddingModel": "text-embedding-3-small",
+  "embeddingProvider": "openai",
+  "chunkingStrategy": "sentence",
+  "chunkSize": 1000,
+  "overlap": 200,
+  "documentCount": 0,
+  "chunkCount": 0,
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+#### GET /api/knowledge-bases
+**List all Knowledge Bases**
+**Response:**
+```json
+{
+  "knowledgeBases": [
+    {
+      "id": "kb-uuid-1",
+      "name": "Research Papers",
+      "documentCount": 15,
+      "chunkCount": 450,
+      "createdAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+#### GET /api/knowledge-bases/:id
+**Get Knowledge Base details**
+**Response:**
+```json
+{
+  "id": "kb-uuid-1",
+  "name": "Research Papers",
+  "description": "Academic research papers on AI",
+  "embeddingModel": "text-embedding-3-small",
+  "embeddingProvider": "openai",
+  "chunkingStrategy": "sentence",
+  "chunkSize": 1000,
+  "overlap": 200,
+  "documentCount": 15,
+  "chunkCount": 450,
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+#### PUT /api/knowledge-bases/:id
+**Update Knowledge Base configuration**
+**Request:**
+```json
+{
+  "name": "Updated Name",
+  "description": "Updated description",
+  "chunkSize": 1500
+}
+```
+
+#### DELETE /api/knowledge-bases/:id
+**Delete Knowledge Base (with cleanup)**
+**Response:**
+```json
+{
+  "message": "Knowledge Base deleted successfully",
+  "documentsDeleted": 15,
+  "chunksDeleted": 450
+}
+```
+
+#### POST /api/knowledge-bases/:id/documents
+**Add document to Knowledge Base**
+**Request:** (multipart/form-data)
+- `file`: Document file
+- `knowledgeBaseId`: KB ID (from URL param)
+
+**Response:**
+```json
+{
+  "document": {
+    "id": "doc-uuid",
+    "filename": "paper.pdf",
+    "knowledgeBaseId": "kb-uuid-1",
+    "chunkCount": 30,
+    "indexed": true
+  }
+}
+```
+
+#### GET /api/knowledge-bases/:id/documents
+**List documents in Knowledge Base**
+**Response:**
+```json
+{
+  "documents": [
+    {
+      "id": "doc-uuid",
+      "filename": "paper.pdf",
+      "type": "pdf",
+      "uploadedAt": "2024-01-01T00:00:00Z",
+      "chunkCount": 30
+    }
+  ]
+}
+```
+
+### RAG Query API (Phase 11)
+
+#### POST /api/rag/query
+**Query a Knowledge Base using RAG**
+**Request:**
+```json
+{
+  "knowledgeBaseId": "kb-uuid-1",
+  "query": "What are the main findings?",
+  "llmProvider": "openai",
+  "llmModel": "gpt-4",
+  "topK": 5,
+  "similarityThreshold": 0.7
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "Based on the retrieved documents...",
+  "sources": [
+    {
+      "documentId": "doc-uuid",
+      "chunkIndex": 5,
+      "similarity": 0.85,
+      "content": "Relevant chunk content..."
+    }
+  ],
+  "knowledgeBaseId": "kb-uuid-1",
+  "model": "gpt-4"
+}
+```
 
 ## Deployment Strategy
 
@@ -638,12 +897,12 @@ REACT_APP_API_URL=http://localhost:3001
 - [ ] Performance benchmarking
 
 ### Future Extensions (Phases 8-13)
-- [ ] Phase 8: Document Processing & Summarization
-- [ ] Phase 9: Video & Web Content Processing
-- [ ] Phase 10: Vector Database & Embeddings
-- [ ] Phase 11: RAG Pipeline Configuration
-- [ ] Phase 12: Agent Framework Integration
-- [ ] Phase 13: Unified Workflow & Integration
+- [x] Phase 8: Document Processing & Summarization ✅
+- [ ] Phase 9: Video & Web Content Processing (can be done in parallel)
+- [ ] Phase 10: Vector Database & Knowledge Bases (NEXT PRIORITY)
+- [ ] Phase 11: RAG Pipeline Configuration (depends on Phase 10)
+- [ ] Phase 12: Agent Framework Integration (depends on Phase 11)
+- [ ] Phase 13: Unified Workflow & Integration (depends on Phase 11)
 
 **See**: `EXTENSION_PLAN.md` for detailed extension planning, technical considerations, and clarifying questions
 

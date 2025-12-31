@@ -36,6 +36,7 @@ export interface DocumentMetadata {
   chunkingSchema?: ChunkingSchema; // Chunking configuration used
   embeddingSchema?: EmbeddingSchema; // Embedding configuration (for future RAG)
   indexed?: boolean; // Whether document is indexed in vector DB
+  knowledgeBaseId?: string; // Knowledge Base this document belongs to
 }
 
 export interface DocumentUpload {

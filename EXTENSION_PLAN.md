@@ -135,76 +135,121 @@ Extend the LLM Chat App to support:
 
 ---
 
-### Phase 10: Vector Database & Embeddings
-**Goal**: Set up vector storage for RAG
+### Phase 10: Vector Database & Knowledge Bases
+**Goal**: Set up vector storage and Knowledge Base (KB) management for RAG
+
+**Core Concept: Knowledge Bases (KBs)**
+- The app supports **multiple persistent Knowledge Bases**
+- Each KB is a separate, isolated collection of documents and embeddings
+- Each KB has its own configuration:
+  - **Embedding model** (OpenAI, OLLAMA, etc.)
+  - **Chunking strategy** (fixed, sentence, paragraph, semantic)
+  - **Chunking parameters** (chunk size, overlap)
+  - **Retrieval parameters** (top-K, similarity threshold)
+- Documents belong to a specific KB
+- KBs are persistent and can be created, updated, and deleted
+- Use cases: Separate KBs for different projects, domains, or purposes
 
 #### 10.1 Vector Database Selection & Setup
 - Choose vector DB (recommend: Chroma for local, Pinecone for cloud)
 - Docker container for local DB
 - Database schema/collections setup
+- **KB isolation**: Each KB maps to a separate collection/namespace
 
-#### 10.2 Embedding Service
+#### 10.2 Knowledge Base Management
+- Create `KnowledgeBaseService` for KB CRUD operations
+- KB metadata storage:
+  - KB ID, name, description
+  - Created/updated timestamps
+  - Document count, chunk count
+  - Configuration (embedding model, chunking strategy)
+- KB persistence (file-based or database)
+- KB validation and constraints
+- Default KB creation for existing documents
+
+#### 10.3 Embedding Service
 - Create `EmbeddingService` abstraction
 - Support multiple embedding models:
   - OpenAI embeddings
   - OLLAMA embeddings (local)
   - Open-source alternatives (sentence-transformers via API)
-- Model selection per use case
+- **KB-scoped embedding**: Each KB uses its configured embedding model
+- Model selection per KB
 
-#### 10.3 Document Chunking & Indexing
-- Implement chunking strategies:
-  - Fixed-size chunks
-  - Semantic chunking
-  - Overlap strategies
-- Index documents with metadata
-- Batch processing
+#### 10.4 Document-to-KB Association
+- Update document upload to require KB selection
+- Link documents to KBs
+- Migrate existing documents to default KB (if needed)
+- Document indexing per KB configuration
 
-#### 10.4 Retrieval Service
+#### 10.5 Chunking & Indexing per KB
+- Apply KB-specific chunking strategy when indexing
+- Use KB's chunking parameters (size, overlap)
+- Index documents with KB metadata
+- Batch processing per KB
+
+#### 10.6 Retrieval Service
 - Create `RetrievalService` for similarity search
-- Configurable retrieval parameters:
+- **KB-scoped retrieval**: Search within a specific KB
+- Configurable retrieval parameters per KB:
   - Top-K results
   - Similarity threshold
   - Metadata filtering
+- Cross-KB search (optional, for Phase 13)
+
+#### 10.7 KB API Endpoints
+- `POST /api/knowledge-bases` - Create new KB
+- `GET /api/knowledge-bases` - List all KBs
+- `GET /api/knowledge-bases/:id` - Get KB details
+- `PUT /api/knowledge-bases/:id` - Update KB configuration
+- `DELETE /api/knowledge-bases/:id` - Delete KB (with cleanup)
+- `POST /api/knowledge-bases/:id/documents` - Add document to KB
+- `GET /api/knowledge-bases/:id/documents` - List documents in KB
 
 **Dependencies**: Phase 8 (Document processing)
 
 ---
 
 ### Phase 11: RAG Pipeline Configuration
-**Goal**: Build configurable RAG system
+**Goal**: Build configurable RAG system using Knowledge Bases
 
 #### 11.1 RAG Pipeline Abstraction
 - Create `RAGPipeline` interface
+- **KB-based pipeline**: Each pipeline is associated with a KB
 - Pipeline components:
-  - Document loader
-  - Chunker
-  - Embedder
-  - Retriever
-  - LLM provider
+  - Knowledge Base (source of truth)
+  - Embedder (uses KB's embedding model)
+  - Retriever (searches within KB)
+  - LLM provider (for generation)
 - Configuration schema
 
 #### 11.2 Pipeline Builder
 - Create `RAGPipelineBuilder` for configuration
+- **KB-first approach**: Select KB, then configure pipeline
 - Preset configurations (simple, advanced, etc.)
 - Custom pipeline creation
 - Pipeline validation
 
 #### 11.3 RAG Query Service
 - Create `RAGQueryService`
+- **KB-scoped queries**: Query a specific KB
 - Query flow:
-  1. Generate query embedding
-  2. Retrieve relevant chunks
-  3. Build context
-  4. Generate response with LLM
+  1. Select target KB
+  2. Generate query embedding (using KB's embedding model)
+  3. Retrieve relevant chunks from KB
+  4. Build context
+  5. Generate response with LLM
 - Context window management
+- Multi-KB queries (optional, for Phase 13)
 
 #### 11.4 Frontend RAG Configuration UI
+- KB selection interface
 - Pipeline configuration interface
 - Model selection per component
-- Chunking strategy selection
+- Chunking strategy selection (inherited from KB)
 - Test/validate pipeline
 
-**Dependencies**: Phase 10 (Vector DB & Embeddings)
+**Dependencies**: Phase 10 (Vector DB & Knowledge Bases)
 
 ---
 

@@ -3,14 +3,20 @@ import cors from 'cors';
 import { config } from './config';
 import { LLMFactory } from './services/llm/LLMFactory';
 import { storageConfig } from './config/storage';
+import { KnowledgeBaseService } from './services/knowledgeBaseService';
 import chatRoutes from './routes/chat';
 import documentRoutes from './routes/documents';
+import knowledgeBaseRoutes from './routes/knowledge-bases';
 
 const app = express();
 
 // Initialize storage
 storageConfig.initialize();
 console.log('📁 Storage initialized');
+
+// Initialize Knowledge Base service
+KnowledgeBaseService.initialize();
+console.log('📚 Knowledge Base service initialized');
 
 // Initialize LLM providers
 LLMFactory.initialize();
@@ -32,6 +38,7 @@ app.get('/health', (_req, res) => {
 // API routes
 app.use('/api', chatRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/knowledge-bases', knowledgeBaseRoutes);
 
 const PORT = config.port;
 

@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { DocumentService } from '../services/documentService';
+import { KnowledgeBaseService } from '../services/knowledgeBaseService';
 import { storageConfig } from '../config/storage';
 import { DocumentMetadata, DocumentType } from '../types/documents';
 import { v4 as uuidv4 } from 'uuid';
@@ -92,10 +93,17 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     fs.writeFileSync(contentPath, text, 'utf-8');
     console.log(`[UPLOAD] Content saved - ${memUsage()}`);
 
-    // Parse optional chunking parameters from form fields
-    const chunkSize = req.body.chunkSize ? parseInt(req.body.chunkSize, 10) : 1000;
-    const overlap = req.body.overlap ? parseInt(req.body.overlap, 10) : 200;
-    const chunkingStrategy = (req.body.chunkingStrategy || 'fixed') as 'fixed' | 'sentence' | 'paragraph' | 'semantic';
+    // Get or create default KB if not specified
+    const knowledgeBaseId = req.body.knowledgeBaseId || KnowledgeBaseService.getOrCreateDefaultKB().id;
+    const kb = KnowledgeBaseService.getKB(knowledgeBaseId);
+    if (!kb) {
+      return res.status(400).json({ error: 'Invalid knowledge base ID' });
+    }
+
+    // Use KB's chunking config if not provided, otherwise use form fields
+    const chunkSize = req.body.chunkSize ? parseInt(req.body.chunkSize, 10) : kb.config.chunkSize;
+    const overlap = req.body.overlap ? parseInt(req.body.overlap, 10) : kb.config.overlap;
+    const chunkingStrategy = (req.body.chunkingStrategy || kb.config.chunkingStrategy) as 'fixed' | 'sentence' | 'paragraph' | 'semantic';
     
     // Validate chunking parameters
     const validatedChunkSize = Math.max(100, Math.min(10000, chunkSize));
@@ -110,6 +118,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       uploadedAt: new Date(),
       processedAt: new Date(),
       chunkCount: 0,
+      knowledgeBaseId: kb.id,
       chunkingSchema: {
         chunkSize: validatedChunkSize,
         overlap: validatedOverlap,
@@ -144,6 +153,10 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     console.log(`[UPLOAD] Saving metadata - ${memUsage()}`);
     DocumentService.saveMetadata(metadata);
     console.log(`[UPLOAD] Metadata saved - ${memUsage()}`);
+
+    // Update KB document count
+    KnowledgeBaseService.incrementDocumentCount(kb.id, 1);
+    KnowledgeBaseService.incrementChunkCount(kb.id, chunks.length);
 
     // Clean up uploaded file
     console.log(`[UPLOAD] Cleaning up temp file: ${file.path} - ${memUsage()}`);
